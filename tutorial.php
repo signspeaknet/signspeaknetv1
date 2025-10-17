@@ -69,11 +69,14 @@
         </button>
     </div>
 
+    <!-- Sidebar backdrop for mobile -->
+    <div id="sidebarBackdrop" class="sidebar-backdrop d-lg-none"></div>
+
     <!-- Main Content Section -->
     <section class="container-fluid">
         <div class="row min-vh-100">
             <!-- Sidebar -->
-            <section class="col-md-3 sidebar" id="sidebar">
+            <section class="col-md-3 sidebar" id="sidebar" aria-label="Tutorial categories" aria-hidden="false">
                 <h4 class="mb-4"><a href="tutorial.html" class="text-dark">Sign Tutorial</a></h4>
                 <ul class="nav flex-column">
                     <li class="nav-item">
@@ -191,9 +194,9 @@
                     </div>
                 </div>
                 <!-- Navigation Buttons -->
-                <div class="gif-controls text-center mt-3" id="gifControls" style="display: none;">
-                    <button id="prevBtn" class="btn btn-secondary me-2">⟵ Previous</button>
-                    <button id="nextBtn" class="btn btn-secondary">Next ⟶</button>
+                <div class="gif-controls text-center mt-3" id="gifControls" style="display: none;" role="group" aria-label="Tutorial navigation">
+                    <button id="prevBtn" class="btn btn-secondary me-2" aria-label="Previous item">⟵ Previous</button>
+                    <button id="nextBtn" class="btn btn-secondary" aria-label="Next item">Next ⟶</button>
                 </div>
             </section>
         </div>

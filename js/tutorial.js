@@ -86,11 +86,39 @@ const gifData = {
     "How?": { src: "img/tutorialgif/how.gif", title: "Questions: How?", description: "To sign 'How?' in ASL, hold both hands up with palms facing each other and move them in a circular motion." }
 };
 
-// Sidebar Toggle
-document.getElementById('sidebarToggle').addEventListener('click', function() {
-    document.getElementById('sidebar').classList.toggle('active');
-    document.getElementById('mainContent').classList.toggle('shifted');
+// Sidebar Toggle with backdrop + scroll lock on mobile
+const sidebarToggleBtn = document.getElementById('sidebarToggle');
+const sidebarEl = document.getElementById('sidebar');
+const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+
+function lockScroll() {
+    document.body.style.overflow = 'hidden';
+}
+function unlockScroll() {
+    document.body.style.overflow = '';
+}
+
+function openSidebar() {
+    sidebarEl.classList.add('active');
+    sidebarBackdrop.classList.add('show');
+    lockScroll();
+}
+
+function closeSidebar() {
+    sidebarEl.classList.remove('active');
+    sidebarBackdrop.classList.remove('show');
+    unlockScroll();
+}
+
+sidebarToggleBtn.addEventListener('click', function() {
+    if (sidebarEl.classList.contains('active')) {
+        closeSidebar();
+    } else {
+        openSidebar();
+    }
 });
+
+sidebarBackdrop.addEventListener('click', closeSidebar);
 
 // Dropdown toggle logic
 document.querySelectorAll('.dropdown-toggle').forEach(button => {
@@ -132,6 +160,11 @@ document.querySelectorAll('.small-dropdown').forEach(link => {
                     parentButton.classList.add('active');
                 }
             }
+        }
+
+        // Auto-close sidebar on mobile after selecting an item
+        if (window.innerWidth < 992) {
+            closeSidebar();
         }
     });
 });
