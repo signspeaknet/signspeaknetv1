@@ -1,0 +1,378 @@
+/********** Template CSS **********/
+:root {
+    --primary: #06BBCC;
+    --light: #F0FBFC;
+    --dark: #181d38;
+}
+
+.fw-medium {
+    font-weight: 600 !important;
+}
+
+.fw-semi-bold {
+    font-weight: 700 !important;
+}
+
+.back-to-top {
+    position: fixed;
+    display: none;
+    right: 45px;
+    bottom: 45px;
+    z-index: 99;
+}
+
+
+/*** Spinner ***/
+#spinner {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .5s ease-out, visibility 0s linear .5s;
+    z-index: 99999;
+}
+
+#spinner.show {
+    transition: opacity .5s ease-out, visibility 0s linear 0s;
+    visibility: visible;
+    opacity: 1;
+}
+
+
+/*** Button ***/
+.btn {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    transition: .5s;
+}
+
+.btn.btn-primary,
+.btn.btn-secondary {
+    color: #FFFFFF;
+}
+
+.btn-square {
+    width: 38px;
+    height: 38px;
+}
+
+.btn-sm-square {
+    width: 32px;
+    height: 32px;
+}
+
+.btn-lg-square {
+    width: 48px;
+    height: 48px;
+}
+
+.btn-square,
+.btn-sm-square,
+.btn-lg-square {
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: normal;
+    border-radius: 0px;
+}
+
+
+/********** Navbar Styles **********/
+.navbar .dropdown-toggle::after {
+    border: none;
+    content: "\f107";
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+  
+  .navbar-light .navbar-nav .nav-link {
+    margin-right: 30px;
+    padding: 25px 0;
+    color: #FFFFFF;
+    font-size: 15px;
+    text-transform: uppercase;
+    outline: none;
+  }
+  
+  .navbar-light .navbar-nav .nav-link:hover,
+  .navbar-light .navbar-nav .nav-link.active {
+    color: var(--primary);
+  }
+  
+  .navbar-light .navbar-brand,
+  .navbar-light a.btn {
+    height: 75px;
+  }
+  
+  .navbar-light .navbar-nav .nav-link {
+    color: var(--dark);
+    font-weight: 500;
+  }
+  
+  .navbar-light.sticky-top {
+    top: -100px;
+    transition: .5s;
+  }
+  
+  /* Navbar Dropdown Animation */
+  @media (min-width: 992px) {
+    .navbar .nav-item .dropdown-menu {
+      display: block;
+      margin-top: 0;
+      opacity: 0;
+      visibility: hidden;
+      transition: .5s;
+    }
+  
+    .navbar .dropdown-menu.fade-down {
+      top: 100%;
+      transform: rotateX(-75deg);
+      transform-origin: 0% 0%;
+    }
+  
+    .navbar .nav-item:hover .dropdown-menu {
+      top: 100%;
+      transform: rotateX(0deg);
+      visibility: visible;
+      transition: .5s;
+      opacity: 1;
+    }
+  }
+  
+  @media (max-width: 991.98px) {
+    .navbar-light .navbar-nav .nav-link {
+      margin-right: 0;
+      padding: 10px 0;
+    }
+  
+    .navbar-light .navbar-nav {
+      border-top: 1px solid #EEEEEE;
+    }
+  }
+  
+  /*** Progress Button ***/
+  .progress-btn {
+    background: var(--primary);
+    color: #FFFFFF !important;
+    border-radius: 5px;
+    padding: 8px 20px !important;
+    margin: 5px 0;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .progress-btn:hover {
+    background: #05a3b1;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .progress-btn i {
+    font-size: 1.1rem;
+    margin-right: 8px;
+  }
+  
+  .progress-text {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  
+  @media (max-width: 991.98px) {
+    .progress-btn {
+        margin: 10px 0;
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+    }
+    
+    .progress-btn i {
+        font-size: 1rem;
+    }
+    
+    .progress-text {
+        font-size: 0.95rem;
+    }
+  }
+  
+
+/* 
+  Custom styles for Sign to Text section
+  - Scanner camera box
+  - Buttons
+  - Responsive adjustments
+*/
+
+/* Scanner-like capture box */
+.scanner-box {
+    width: 100%;
+    max-width: 800px;
+    height: 400px;
+    background-color: #fdfaf7;
+    border: 2px dashed #17c0d1;
+    border-radius: 10px;
+  }
+  
+  /* Output text box */
+  .output-area {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  /* Circle button design */
+  .circle-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+  }
+  
+  .circle-btn:hover {
+    transform: scale(1.1);
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .scanner-box {
+      height: 300px;
+    }
+  
+    .circle-btn {
+      width: 50px;
+      height: 50px;
+    }
+  
+    #translateBtn {
+      width: 100%;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .scanner-box {
+      height: 250px;
+    }
+  }
+
+  video#webcam {
+    object-fit: cover;
+  }
+  
+
+/*** Footer ***/
+.footer .btn.btn-social {
+    margin-right: 5px;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--light);
+    font-weight: normal;
+    border: 1px solid #FFFFFF;
+    border-radius: 35px;
+    transition: .3s;
+}
+
+.footer .btn.btn-social:hover {
+    color: var(--primary);
+}
+
+.footer .btn.btn-link {
+    display: block;
+    margin-bottom: 5px;
+    padding: 0;
+    text-align: left;
+    color: #FFFFFF;
+    font-size: 15px;
+    font-weight: normal;
+    text-transform: capitalize;
+    transition: .3s;
+}
+
+.footer .btn.btn-link::before {
+    position: relative;
+    content: "\f105";
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    margin-right: 10px;
+}
+
+.footer .btn.btn-link:hover {
+    letter-spacing: 1px;
+    box-shadow: none;
+}
+
+.footer .copyright {
+    padding: 25px 0;
+    font-size: 15px;
+    border-top: 1px solid rgba(256, 256, 256, .1);
+}
+
+.footer .copyright a {
+    color: var(--light);
+}
+
+.footer .footer-menu a {
+    margin-right: 15px;
+    padding-right: 15px;
+    border-right: 1px solid rgba(255, 255, 255, .1);
+}
+
+.footer .footer-menu a:last-child {
+    margin-right: 0;
+    padding-right: 0;
+    border-right: none;
+}
+
+/* Terms and Privacy Policy Modal Styles */
+.modal-content {
+  border-radius: 1rem;
+  border: none;
+}
+
+.modal-header {
+  background-color: var(--primary);
+  color: white;
+  border-top-left-radius: 1rem;
+  border-top-right-radius: 1rem;
+}
+
+.modal-header .btn-close {
+  color: white;
+  filter: brightness(0) invert(1);
+}
+
+.modal-body {
+  padding: 2rem;
+}
+
+.modal-body h4 {
+  color: var(--primary);
+  margin-bottom: 1rem;
+}
+
+.modal-body ul {
+  padding-left: 1.5rem;
+}
+
+.modal-body li {
+  margin-bottom: 0.5rem;
+  color: #666;
+}
+
+.modal-footer {
+  border-top: 1px solid #eee;
+  padding: 1rem 2rem;
+}
+
+.modal-footer .btn-secondary {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.modal-footer .btn-secondary:hover {
+  background-color: #05a3b1;
+  border-color: #05a3b1;
+}
