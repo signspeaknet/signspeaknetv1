@@ -35,8 +35,8 @@
 
     <style>
         :root {
-            --primary-color: #007f8b;
-            --secondary-color: #2196f3;
+            --primary-color: #06BBCC;
+            --secondary-color: #06BBCC;
             --error-color: #dc3545;
             --success-color: #28a745;
             --warning-color: #ffc107;
@@ -45,28 +45,63 @@
             --border-radius: 8px;
             --box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+        body { background: var(--background-color); }
 
         .main-container {
             display: flex;
-            flex-direction: row;
-            align-items: flex-start;
+            align-items: center;
+            justify-content: center;
             width: 100%;
             max-width: 1200px;
             margin: 5em auto 2em auto;
-            gap: 1.5em;
-            padding: 0 0.5em;
+            padding: 0 1em;
+        }
+        .panel {
+            position: relative;
+            background: #ffffff;
+            border-radius: 28px;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.12);
+            padding: 18px;
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .card-title {
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 1px;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+
+        .status-badge {
+            display: inline-block;
+            background: #e6f7ee;
+            color: #15803d;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
         }
 
         .videoView {
             position: relative;
-            width: 55%;
-            aspect-ratio: 9/16;
+            width: 100%;
+            aspect-ratio: 16/9;
             margin: 0;
-            max-height: 80vh;
-            border-radius: var(--border-radius);
+            max-height: 70vh;
+            border-radius: 18px;
             overflow: hidden;
-            box-shadow: var(--box-shadow);
-            background-color: #f8f9fa;
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04);
+            background-color: #f7f9fc; /* whitish */
+            border: 1px solid #e5e7eb;
         }
 
         .silhouette-placeholder {
@@ -116,11 +151,9 @@
         .controls-container {
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
-            width: 45%;
+            align-items: stretch;
+            width: 100%;
             margin: 0;
-            max-width: 300px;
-            padding-top: 0.5em;
             gap: 0.8em;
         }
 
@@ -128,20 +161,25 @@
             pointer-events: none;
         }
 
+        /* Caption overlay */
         #predictionText {
-            width: 100%;
-            min-height: 100px;
-            margin: 10px 0;
-            padding: 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: var(--border-radius);
-            background-color: white;
-            font-size: 1.1em;
-            line-height: 1.4;
-            overflow-y: auto;
-            text-align: left;
-            box-shadow: var(--box-shadow);
-            transition: border-color 0.3s ease;
+            position: absolute;
+            left: 50%;
+            bottom: 56px;
+            transform: translateX(-50%);
+            color: #0f172a;
+            background: rgba(255,255,255,0.85);
+            border: 1px solid rgba(0,0,0,0.08);
+            -webkit-backdrop-filter: blur(6px);
+            backdrop-filter: blur(6px);
+            border-radius: 16px;
+            padding: 14px 22px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 28px;
+            min-width: 60%;
+            text-align: center;
         }
 
         #predictionText:focus {
@@ -149,12 +187,36 @@
             outline: none;
         }
 
-        .button-group {
+        /* Bottom control dock */
+        .dock {
+            position: absolute;
+            left: 50%;
+            bottom: 8px;
+            transform: translateX(-50%);
             display: flex;
-            gap: 0.5em;
-            width: 100%;
-            justify-content: center;
+            align-items: center;
+            gap: 28px;
         }
+
+        .circle-btn {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #0f172a;
+            background: #ffffff;
+            border: 1px solid rgba(0,0,0,0.08);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+        }
+
+        .circle-btn.primary {
+            box-shadow: 0 0 20px rgba(6, 187, 204, 0.6), inset 0 0 12px rgba(6,187,204,0.45);
+            background: radial-gradient(circle at 50% 40%, rgba(6,187,204,0.35), rgba(0,0,0,0.2));
+        }
+
+        .dock .label { margin-top: 6px; text-align: center; font-size: 11px; color: #94a3b8; font-weight: 700; }
 
         .mdc-button {
             min-width: 140px;
@@ -180,23 +242,34 @@
         }
 
         #backspaceButton {
-            background-color: var(--error-color);
-            color: white;
+            background-color: #fee2e2;
+            color: #b91c1c;
+            border: none;
         }
 
-        #backspaceButton:hover {
-            background-color: #c82333;
+        #startButton.primary-cta {
+            background-color: #06BBCC;
+            color: #ffffff;
+            border: none;
+            height: 56px;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 16px;
         }
 
+        /* Status badge */
         #distanceStatus {
-            font-size: 1.2em;
-            font-weight: bold;
-            padding: 10px;
-            border-radius: var(--border-radius);
-            background-color: white;
-            box-shadow: var(--box-shadow);
-            width: 100%;
-            text-align: center;
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            font-weight: 800;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background-color: #daf6f8;
+            color: #055a63;
+            border: 1px solid rgba(0,0,0,0.05);
         }
 
         #recordingProgress {
@@ -283,66 +356,14 @@
 
         @media (max-width: 768px) {
             .main-container {
-                flex-direction: row;
-                align-items: flex-start;
                 margin: 5em auto 2em auto;
-                gap: 0.5em;
-                padding: 0 0.5em;
+                padding: 0 0.75em;
             }
-
-            .videoView {
-                width: 60%;
-                max-width: none;
-            }
-
-            .controls-container {
-                width: 40%;
-                max-width: none;
-                padding-top: 0;
-            }
-
-            .button-group {
-                flex-direction: column;
-                gap: 0.3em;
-            }
-
-            .mdc-button {
-                min-width: unset;
-                width: 100%;
-                height: 36px;
-                padding: 0 8px;
-                font-size: 0.8em;
-            }
-
-            .mdc-button .material-icons {
-                font-size: 16px;
-                margin-right: 4px;
-            }
-
-            #predictionText {
-                min-height: 60px;
-                font-size: 0.9em;
-                padding: 8px;
-            }
-
-            #distanceStatus {
-                font-size: 0.9em;
-                padding: 6px;
-            }
-
-            #recordingProgress {
-                height: 6px;
-            }
-
-            .back-button-container {
-                top: 10px;
-                left: 10px;
-            }
-
-            .back-button-container .btn {
-                padding: 6px 12px;
-                font-size: 0.9em;
-            }
+            .videoView { max-width: none; }
+            #predictionText { font-size: 20px; padding: 10px 14px; min-width: 70%; bottom: 58px; }
+            .dock { gap: 18px; }
+            .back-button-container { top: 10px; left: 10px; }
+            .back-button-container .btn { padding: 6px 12px; font-size: 0.9em; }
         }
     </style>
 </head>
@@ -370,37 +391,37 @@
     </div>
 
     <div class="main-container">
-        <div class="videoView"> 
-            <div class="silhouette-placeholder"></div>
-            <video id="webcam" autoplay playsinline></video>
-            <canvas id="output_canvas"></canvas>
-        </div>
-  
-        <div class="controls-container">
-            <div id="predictionText" contenteditable="true" spellcheck="false"></div>
-            <div class="button-group">
-                <button id="backspaceButton" class="mdc-button mdc-button--raised">
-                    <span class="mdc-button__ripple"></span>
-                    <span class="material-icons">backspace</span>
-                    <span class="mdc-button__label">Backspace</span>
-                </button>
+        <div class="panel">
+            <div class="videoView"> 
+                <div id="distanceStatus">STATUS: ACTIVELY TRANSLATING</div>
+                <div class="silhouette-placeholder"></div>
+                <video id="webcam" autoplay playsinline></video>
+                <canvas id="output_canvas"></canvas>
+                <div id="predictionText" contenteditable="true" spellcheck="false"></div>
+                <div class="dock">
+                    <div style="display:flex; flex-direction:column; align-items:center;">
+                        <button id="backspaceButton" class="circle-btn" title="Undo">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                        <div class="label">UNDO</div>
+                    </div>
+                    <div style="display:flex; flex-direction:column; align-items:center;">
+                        <button id="startButton" class="circle-btn primary" title="Play/Pause">
+                            <i class="fas fa-pause" id="playPauseIcon"></i>
+                        </button>
+                        <div class="label">PAUSE</div>
+                    </div>
+                    <div style="display:flex; flex-direction:column; align-items:center;">
+                        <button id="saveButton" class="circle-btn" title="Save/Copy">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </button>
+                        <div class="label">SAVE</div>
+                    </div>
+                </div>
             </div>
-            <progress id="recordingProgress" value="0" max="100"></progress>    
-            <div id="distanceStatus"></div>
-            <div class="button-group">
-                <button id="recordButton" class="mdc-button mdc-button--outlined">
-                    <span class="mdc-button__ripple"></span>
-                    <span class="material-icons">fiber_manual_record</span>
-                    <span class="mdc-button__label">Record</span>
-                </button>
-                <button id="startButton" class="mdc-button mdc-button--raised">
-                    <span class="mdc-button__ripple"></span>
-                    <span class="material-icons">play_arrow</span>
-                    <span class="mdc-button__label">Start</span>
-        </button>
-      </div>
+            <progress id="recordingProgress" value="0" max="100" style="display:none; width:100%; margin-top:10px;"></progress>
         </div>
-      </div>
+    </div>
   
     <div id="loadingContainer">
         <div id="loadingText">Loading MediaPipe models, please wait...</div>
@@ -465,10 +486,22 @@
             recordButton.style.display = "block";
         });
     
+        // Play/Pause toggle: first click starts webcam, then toggles running
+        const playPauseIcon = document.getElementById('playPauseIcon');
         startButton.addEventListener("click", async () => {
-            if (webcamRunning) return;
-            webcamRunning = true;
-            await enableWebcam();
+            if (!webcamRunning) {
+                webcamRunning = true;
+                await enableWebcam();
+                if (playPauseIcon) playPauseIcon.className = 'fas fa-pause';
+                return;
+            }
+            webcamRunning = !webcamRunning;
+            if (webcamRunning) {
+                if (playPauseIcon) playPauseIcon.className = 'fas fa-pause';
+                window.requestAnimationFrame(predictWebcam);
+            } else {
+                if (playPauseIcon) playPauseIcon.className = 'fas fa-play';
+            }
         });
     
         recordButton.addEventListener("click", async () => {
@@ -565,6 +598,18 @@
             currentText = words.join(' ') + (words.length > 0 ? ' ' : '');
             predictionText.textContent = currentText;
         });
+
+        // Save/Copy logic
+        const saveButton = document.getElementById('saveButton');
+        if (saveButton) {
+            saveButton.addEventListener('click', async () => {
+                try {
+                    await navigator.clipboard.writeText(predictionText.textContent || '');
+                    saveButton.classList.add('primary');
+                    setTimeout(()=> saveButton.classList.remove('primary'), 700);
+                } catch (e) { console.warn('Clipboard not available'); }
+            });
+        }
 
         async function sendJSONToServer(allFramesData) {
             const payload = { data: allFramesData };

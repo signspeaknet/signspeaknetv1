@@ -80,6 +80,75 @@
   border-radius: 0px;
 }
 
+/*** Progress Button and User Initials (match Home) ***/
+.progress-btn {
+  background: var(--primary);
+  color: #FFFFFF !important;
+  border-radius: 5px;
+  padding: 8px 20px !important;
+  margin: 5px 0;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progress-btn:hover {
+  background: #05a3b1;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.progress-btn i {
+  font-size: 1.1rem;
+  margin-right: 8px;
+}
+
+.user-initials {
+  background: rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+  margin-right: 8px;
+  transition: all 0.3s ease;
+}
+
+.progress-text {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 991.98px) {
+  .progress-btn {
+    margin: 10px 0;
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .progress-btn i {
+    font-size: 1rem;
+  }
+
+  .user-initials {
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
+    margin-right: 6px;
+  }
+
+  .progress-text {
+    font-size: 0.95rem;
+  }
+}
+
 
 /********** Navbar Styles **********/
 .navbar .dropdown-toggle::after {

@@ -287,6 +287,20 @@ try {
 
     <!-- Template Stylesheet -->
     <link href="css/admin.css?v=<?php echo time(); ?>" rel="stylesheet">
+    <style>
+        @media (max-width: 576px) {
+            .chart-container { padding: 12px; }
+            .chart-title { font-size: 0.95rem; }
+            .admin-content .input-group { width: 100% !important; }
+            .form-select.form-select-sm { max-width: 160px; }
+        }
+        .sidebar-toggle-btn { display: none; }
+        @media (max-width: 991.98px) {
+            .sidebar-toggle-btn { display: inline-flex; align-items:center; justify-content:center; }
+        }
+        #sidebarBackdrop { display:none; position:fixed; inset:0; background: rgba(0,0,0,0.35); z-index: 900; }
+        #sidebarBackdrop.show { display:block; }
+    </style>
     
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -308,7 +322,12 @@ try {
             <!-- Top Navbar -->
             <div class="admin-navbar">
                 <div class="d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0">Dashboard Overview</h4>
+                    <div class="d-flex align-items-center gap-2">
+                        <button id="toggleSidebarBtn" class="btn btn-outline-secondary btn-sm sidebar-toggle-btn" type="button">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <h4 class="mb-0">Dashboard</h4>
+                    </div>
                     <div class="d-flex align-items-center">
                         <span class="text-muted me-3">Welcome, <?php echo htmlspecialchars($_SESSION['admin_username']); ?></span>
                     </div>
@@ -316,599 +335,214 @@ try {
             </div>
 
             <div class="admin-content">
-                <!-- Statistics Cards -->
+                <!-- Charts Row 1 -->
                 <div class="row mb-4">
-                    <div class="col-md-3 mb-3">
-                        <div class="stats-card">
-                            <div class="d-flex justify-content-between">
+                    <div class="col-lg-6 mb-3">
+                        <div class="chart-container">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="chart-title"><i class="fas fa-bolt"></i> Active Users Trend</div>
                                 <div>
-                                    <h3 class="text-primary mb-1"><?php echo $question_bank_stats['total_questions']; ?></h3>
-                                    <p class="text-muted mb-0">Question Bank</p>
-                                </div>
-                                <div class="align-self-center">
-                                    <i class="fas fa-database fa-2x text-primary"></i>
+                                    <select id="activeUsersMode" class="form-select form-select-sm" style="width:auto; display:inline-block;">
+                                        <option value="minute">By minute</option>
+                                        <option value="day">By day</option>
+                                    </select>
                                 </div>
                             </div>
+                            <canvas id="chartActiveUsers" height="120"></canvas>
+                            <div class="chart-notes">Realtime-like fake data; toggle minute/day.</div>
                         </div>
                     </div>
-                    
-                    <div class="col-md-3 mb-3">
-                        <div class="stats-card">
-                            <div class="d-flex justify-content-between">
+                    <div class="col-lg-6 mb-3">
+                        <div class="chart-container">
+                            <div class="chart-title"><i class="fas fa-user-clock"></i> Most Active Accounts per Day</div>
+                            <canvas id="chartMostActive" height="120"></canvas>
+                            <div class="chart-notes">Fake data based on total minutes spent.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row 2 -->
+                <div class="row mb-4">
+                    <div class="col-lg-6 mb-3">
+                        <div class="chart-container">
+                            <div class="chart-title"><i class="fas fa-bullseye"></i> Most Accurately Predicted Word</div>
+                            <canvas id="chartAccuracy" height="120"></canvas>
+                            <div class="chart-notes">Average accuracy per attempt (fake data).</div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <div class="chart-container">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="chart-title"><i class="fas fa-flag-checkered"></i> Finished Exercises</div>
                                 <div>
-                                    <h3 class="text-success mb-1"><?php echo $stats['total_quizzes']; ?></h3>
-                                    <p class="text-muted mb-0">Active Quizzes</p>
-                                </div>
-                                <div class="align-self-center">
-                                    <i class="fas fa-star fa-2x text-success"></i>
-                                </div>
-                            </div>
+                                    <select id="finishedMode" class="form-select form-select-sm" style="width:auto; display:inline-block;">
+                                        <option value="week">Per week</option>
+                                        <option value="month">Per month</option>
+                                        <option value="year">Per year</option>
+                                    </select>
                         </div>
                     </div>
-                    
-                    <div class="col-md-3 mb-3">
-                        <div class="stats-card">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <h3 class="text-warning mb-1"><?php echo $stats['total_questions']; ?></h3>
-                                    <p class="text-muted mb-0">Questions Used</p>
-                                </div>
-                                <div class="align-self-center">
-                                    <i class="fas fa-question-circle fa-2x text-warning"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-3 mb-3">
-                        <div class="stats-card">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <h3 class="text-info mb-1"><?php echo $stats['total_users']; ?></h3>
-                                    <p class="text-muted mb-0">Registered Users</p>
-                                </div>
-                                <div class="align-self-center">
-                                    <i class="fas fa-users fa-2x text-info"></i>
-                                </div>
-                            </div>
+                            <canvas id="chartFinished" height="120"></canvas>
+                            <div class="chart-notes">Toggle granularity; fake completion counts.</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Question Bank Breakdown -->
+                <!-- Charts Row 3 -->
                 <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Question Bank Breakdown</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-2 mb-3">
-                                        <div class="text-center">
-                                            <h4 class="text-primary"><?php echo $question_bank_stats['alphabet_questions']; ?></h4>
-                                            <small class="text-muted">Alphabet</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-2 mb-3">
-                                        <div class="text-center">
-                                            <h4 class="text-success"><?php echo $question_bank_stats['number_questions']; ?></h4>
-                                            <small class="text-muted">Numbers</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-2 mb-3">
-                                        <div class="text-center">
-                                            <h4 class="text-warning"><?php echo $question_bank_stats['greeting_questions']; ?></h4>
-                                            <small class="text-muted">Greetings</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-2 mb-3">
-                                        <div class="text-center">
-                                            <h4 class="text-info"><?php echo $question_bank_stats['verb_questions']; ?></h4>
-                                            <small class="text-muted">Verbs</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-2 mb-3">
-                                        <div class="text-center">
-                                            <h4 class="text-danger"><?php echo $question_bank_stats['adjective_questions']; ?></h4>
-                                            <small class="text-muted">Adjectives</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-2 mb-3">
-                                        <div class="text-center">
-                                            <h4 class="text-secondary"><?php echo $question_bank_stats['question_questions']; ?></h4>
-                                            <small class="text-muted">Questions</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row mt-3">
-                                    <div class="col-md-6">
-                                        <div class="text-center">
-                                            <h5 class="text-success"><?php echo $question_bank_stats['text_questions']; ?></h5>
-                                            <small class="text-muted">Text-based Questions</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="text-center">
-                                            <h5 class="text-primary"><?php echo $question_bank_stats['gif_questions']; ?></h5>
-                                            <small class="text-muted">GIF-based Questions</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recent Quizzes (Full Width) -->
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="table-container">
-                            <h5 class="mb-3">Recent Quizzes</h5>
-                            <div class="table-responsive">
-                                <table class="table table-sm">
-                                    <thead>
-                                        <tr>
-                                            <th>Quiz</th>
-                                            <th>Questions</th>
-                                            <th>Difficulty</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($recent_quizzes as $quiz): ?>
-                                        <tr>
-                                            <td>
-                                                <div class="d-flex align-items-center">
-                                                    <div class="avatar-sm bg-warning rounded-circle d-flex align-items-center justify-content-center me-2">
-                                                        <i class="fas fa-star text-white"></i>
-                                                    </div>
-                                                    <div>
-                                                        <div class="fw-bold"><?php echo htmlspecialchars($quiz['title']); ?></div>
-                                                        <small class="text-muted"><?php echo date('M j', strtotime($quiz['created_at'])); ?></small>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-info"><?php echo $quiz['questions_added']; ?>/<?php echo $quiz['num_questions']; ?></span>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-<?php echo $quiz['difficulty_level'] === 'beginner' ? 'success' : ($quiz['difficulty_level'] === 'intermediate' ? 'warning' : 'danger'); ?>">
-                                                    <?php echo ucfirst($quiz['difficulty_level']); ?>
-                                                </span>
-                                            </td>
-                                        </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Students Active by Month (Full Width) -->
-                <div class="row mb-4">
-                    <div class="col-12">
+                    <div class="col-lg-6 mb-3">
                         <div class="chart-container">
-                            <div class="chart-title"><i class="fas fa-user-check"></i> Students Active by Month (Last 12 Months)</div>
-                            <canvas id="studentsByMonthChart" height="100"></canvas>
-                            <div class="chart-notes">Line shows distinct students with attempts per month.</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Students Enrolled by Month (Full Width) -->
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="chart-container">
-                            <div class="chart-title"><i class="fas fa-user-plus"></i> Students Enrolled by Month</div>
-                            <canvas id="enrollmentsByMonthChart" height="100"></canvas>
-                            <div class="chart-notes">Bars show monthly registrations; line shows 3-month moving average.</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Students by Difficulty (Full Width) -->
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="chart-container">
-                            <div class="chart-title"><i class="fas fa-signal"></i> Students by Difficulty</div>
-                            <canvas id="studentsByDifficultyChart" height="100"></canvas>
-                            <div class="chart-notes">Distinct students who attempted at least one quiz per difficulty.</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Active Users (Full Width) -->
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="chart-container">
-                            <div class="chart-title"><i class="fas fa-bolt"></i> Active Users (Last 30 Minutes) <span id="activeUsersNowBadge" class="badge bg-success ms-2" style="font-size:0.8rem;">Active now: —</span></div>
-                            <canvas id="activeUsersChart" height="100"></canvas>
-                            <div class="chart-notes">Updated every 10 seconds. Distinct users per minute; gray dashed = 30‑minute average, green dashed = target, red dot = peak.</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Average Score by Difficulty (Full Width) -->
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="chart-container">
-                            <div class="chart-title"><i class="fas fa-percentage"></i> Average Score by Difficulty</div>
-                            <canvas id="avgScoreByDifficultyChart" height="120"></canvas>
-                            <div class="chart-notes">Colors: red <60, amber 60–79, green ≥80.</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Top Active Quizzes (Full Width) -->
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="chart-container">
-                            <div class="chart-title"><i class="fas fa-chart-bar"></i> Top Active Quizzes (Last 30 Days)</div>
-                            <canvas id="topActiveQuizzesChart" height="120"></canvas>
-                            <div class="chart-notes">Distinct students per quiz over the last 30 days.</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- System Status -->
-                <div class="row mb-4">
-                    <div class="col-md-6 mb-3">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>System Status</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-6">
-                                        <div class="d-flex align-items-center mb-2">
-                                            <i class="fas fa-database text-success me-2"></i>
-                                            <span>Database: <strong>Connected</strong></span>
-                                        </div>
-                                        <div class="d-flex align-items-center mb-2">
-                                            <i class="fas fa-file-code text-success me-2"></i>
-                                            <span>Question Bank: <strong><?php echo $question_bank_stats['total_questions']; ?> questions</strong></span>
-                                        </div>
-                                        <div class="d-flex align-items-center mb-2">
-                                            <i class="fas fa-star text-success me-2"></i>
-                                            <span>Advanced Quizzes: <strong><?php echo $stats['total_quizzes']; ?> active</strong></span>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="d-flex align-items-center mb-2">
-                                            <i class="fas fa-users text-success me-2"></i>
-                                            <span>Users: <strong><?php echo $stats['total_users']; ?> registered</strong></span>
-                                        </div>
-                                        <div class="d-flex align-items-center mb-2">
-                                            <i class="fas fa-clock text-info me-2"></i>
-                                            <span>Recent Activity: <strong><?php echo $stats['recent_quizzes']; ?> new quizzes</strong></span>
-                                        </div>
-                                        <div class="d-flex align-items-center mb-2">
-                                            <i class="fas fa-check-circle text-success me-2"></i>
-                                            <span>System: <strong>Operational</strong></span>
-                                        </div>
-                                    </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="chart-title"><i class="fas fa-user-search"></i> User Progress</div>
+                                <div class="input-group input-group-sm" style="width: 260px;">
+                                    <input id="userSearch" type="text" class="form-control" placeholder="Search username...">
+                                    <button id="userSearchBtn" class="btn btn-primary">Go</button>
                                 </div>
                             </div>
+                            <canvas id="chartUserProgress" height="120"></canvas>
+                            <div class="chart-notes">Shows accomplished words over time (fake per user).</div>
                         </div>
                     </div>
-                    
-                    <div class="col-md-6 mb-3">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-6 mb-2">
-                                        <a href="admin_advanced_quizzes.php" class="btn btn-warning btn-sm w-100">
-                                            <i class="fas fa-star me-1"></i>Create Quiz
-                                        </a>
-                                    </div>
-                                    <div class="col-6 mb-2">
-                                        <a href="admin_users.php" class="btn btn-primary btn-sm w-100">
-                                            <i class="fas fa-users me-1"></i>Manage Users
-                                        </a>
-                                    </div>
-                                    <div class="col-6 mb-2">
-                                        <a href="admin_profile.php" class="btn btn-info btn-sm w-100">
-                                            <i class="fas fa-user-cog me-1"></i>Profile
-                                        </a>
-                                    </div>
-                                    <div class="col-6 mb-2">
-                                        <a href="index.php" class="btn btn-secondary btn-sm w-100">
-                                            <i class="fas fa-external-link-alt me-1"></i>View Site
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
+                    <div class="col-lg-6 mb-3">
+                        <div class="chart-container">
+                            <div class="chart-title"><i class="fas fa-users"></i> Signed-in vs Guest Users</div>
+                            <canvas id="chartSigninVsGuest" height="120"></canvas>
+                            <div class="chart-notes">Blue = signed-in, Red = guests (fake trend).</div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    <div id="sidebarBackdrop"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Global Chart.js Theme
+        // Sidebar toggle for mobile
+        const sidebar = document.querySelector('.admin-sidebar');
+        const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+        const toggleBtn = document.getElementById('toggleSidebarBtn');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('show');
+                sidebarBackdrop.classList.toggle('show');
+            });
+            sidebarBackdrop.addEventListener('click', () => {
+                sidebar.classList.remove('show');
+                sidebarBackdrop.classList.remove('show');
+            });
+        }
+
+        // Chart.js global defaults with visible points
         Chart.defaults.font.family = 'Nunito, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
         Chart.defaults.color = '#6c757d';
         Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(33, 37, 41, 0.9)';
         Chart.defaults.plugins.tooltip.titleColor = '#fff';
         Chart.defaults.plugins.tooltip.bodyColor = '#e9ecef';
         Chart.defaults.plugins.tooltip.cornerRadius = 8;
-        Chart.defaults.plugins.legend.labels.boxWidth = 14;
-        Chart.defaults.plugins.legend.labels.boxHeight = 14;
         Chart.defaults.elements.line.borderWidth = 3;
-        Chart.defaults.elements.point.radius = 3;
-        Chart.defaults.elements.point.hoverRadius = 5;
-        Chart.defaults.animation.duration = 800;
+        Chart.defaults.elements.point.radius = 4;
+        Chart.defaults.elements.point.hoverRadius = 6;
+        Chart.defaults.animation.duration = 700;
 
-        // PHP-provided totals for tooltip context
-        const TOTAL_USERS = <?php echo (int)$stats['total_users']; ?>;
-
-        // Data labels plugin (simple)
-        const simpleValueLabels = {
-            id: 'simpleValueLabels',
-            afterDatasetsDraw(chart, args, pluginOptions) {
-                const { ctx } = chart;
-                ctx.save();
-                ctx.font = Chart.helpers.fontString(12, '600', Chart.defaults.font.family);
-                ctx.fillStyle = '#495057';
-
-                chart.data.datasets.forEach((dataset, datasetIndex) => {
-                    const meta = chart.getDatasetMeta(datasetIndex);
-                    if (meta.hidden) return;
-
-                    meta.data.forEach((element, index) => {
-                        const value = dataset.data[index];
-                        if (value == null) return;
-                        let label = typeof value === 'number' ? value.toString() : value;
-                        // Positioning
-                        const pos = element.tooltipPosition();
-                        const isHorizontal = chart.options.indexAxis === 'y';
-                        if (dataset.type === 'line') return; // skip line labels for clarity
-
-                        if (isHorizontal) {
-                            ctx.textAlign = 'left';
-                            ctx.textBaseline = 'middle';
-                            ctx.fillText(label, pos.x + 6, pos.y);
-                        } else {
-                            ctx.textAlign = 'center';
-                            ctx.textBaseline = 'bottom';
-                            ctx.fillText(label, pos.x, pos.y - 6);
-                        }
-                    });
-                });
-
-                ctx.restore();
-            }
-        };
-
-        // Gradient helpers
-        function createLinearGradient(ctx, color, alpha) {
-            const gradient = ctx.createLinearGradient(0, 0, 0, 200);
-            gradient.addColorStop(0, hexToRgba(color, alpha));
-            gradient.addColorStop(1, hexToRgba(color, 0));
-            return gradient;
+        // Helpers
+        function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+        function generateArray(n, min, max) { return Array.from({length:n}, () => rand(min, max)); }
+        function movingAvg(arr, windowSize=3) {
+            const out=[]; for (let i=0;i<arr.length;i++){ const start=Math.max(0,i-windowSize+1); const slice=arr.slice(start,i+1); out.push(Math.round(slice.reduce((a,b)=>a+b,0)/slice.length)); } return out;
+        }
+        function sortDescByValue(labels, values){
+            const pairs = labels.map((l,i)=>({l, v: values[i]}));
+            pairs.sort((a,b)=> b.v - a.v);
+            return { labels: pairs.map(p=>p.l), values: pairs.map(p=>p.v) };
         }
 
-        function hexToRgba(hex, alpha) {
-            const c = hex.replace('#', '');
-            const bigint = parseInt(c, 16);
-            const r = (bigint >> 16) & 255;
-            const g = (bigint >> 8) & 255;
-            const b = bigint & 255;
-            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        // Responsive canvas heights for mobile
+        function setCanvasHeights() {
+            const small = window.innerWidth < 576;
+            const h = small ? 100 : 140;
+            const ids = ['chartActiveUsers','chartMostActive','chartAccuracy','chartFinished','chartUserProgress','chartSigninVsGuest'];
+            ids.forEach(id=>{ const el = document.getElementById(id); if (el) el.height = h; });
         }
+        setCanvasHeights();
 
-        // Students by Month (Line)
-        const sbmCtx = document.getElementById('studentsByMonthChart').getContext('2d');
-        const sbmData = <?php echo json_encode($students_by_month); ?>;
-        const sbmLabels = sbmData.map(item => item.month.substring(0, 7));
-        const sbmCounts = sbmData.map(item => parseInt(item.students));
-        new Chart(sbmCtx, {
+        // 1) Active Users Trend (minute/day toggle)
+        const activeCtx = document.getElementById('chartActiveUsers').getContext('2d');
+        const minuteLabels = Array.from({length: 60}, (_,i)=> `${i}m`);
+        const minuteValues = generateArray(60, 5, 60);
+        const dayLabels = Array.from({length: 24}, (_,i)=> `${i}:00`);
+        const dayValues = generateArray(24, 20, 150);
+        let activeUsersChart = new Chart(activeCtx, {
             type: 'line',
-            data: {
-                labels: sbmLabels,
-                datasets: [{
-                    label: 'Active Students',
-                    data: sbmCounts,
-                    borderColor: '#0d6efd',
-                    backgroundColor: createLinearGradient(sbmCtx, '#0d6efd', 0.25),
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true } }
-            }
+            data: { labels: minuteLabels, datasets: [{ label: 'Active Users', data: minuteValues, borderColor: '#0d6efd', backgroundColor: 'rgba(13,110,253,0.15)', fill: true, tension: 0.35 }] },
+            options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{ y:{ beginAtZero:true } } }
         });
-
-        // Enrollments by Month (Combo: Bar + 3-mo Trend Line)
-        const ebmCtx = document.getElementById('enrollmentsByMonthChart').getContext('2d');
-        const ebmData = <?php echo json_encode($enrollments_by_month); ?>;
-        const ebmLabels = ebmData.map(item => item.month.substring(0, 7));
-        const ebmCounts = ebmData.map(item => parseInt(item.enrolled));
-        const ebmMA = ebmCounts.map((_, i, arr) => {
-            const start = Math.max(0, i - 2);
-            const slice = arr.slice(start, i + 1);
-            const denom = i < 2 ? (i + 1) : 3;
-            const sum = slice.reduce((a, b) => a + b, 0);
-            return Math.round((sum / denom) * 100) / 100;
+        document.getElementById('activeUsersMode').addEventListener('change', (e)=>{
+            const mode = e.target.value;
+            activeUsersChart.data.labels = mode==='minute'? minuteLabels : dayLabels;
+            activeUsersChart.data.datasets[0].data = mode==='minute'? minuteValues : dayValues;
+            activeUsersChart.update();
         });
-        new Chart(ebmCtx, {
-            type: 'bar',
-            data: {
-                labels: ebmLabels,
-                datasets: [
-                    { label: 'Enrollments', data: ebmCounts, backgroundColor: '#198754', borderColor: '#157347', borderWidth: 1 },
-                    { type: 'line', label: '3-mo Trend', data: ebmMA, borderColor: '#0d6efd', backgroundColor: 'transparent', yAxisID: 'y', tension: 0.35, pointRadius: 0, pointHoverRadius: 3 }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: true, position: 'bottom' } },
-                scales: { y: { beginAtZero: true } }
-            },
-            plugins: [simpleValueLabels]
+        window.addEventListener('resize', ()=>{ setCanvasHeights(); activeUsersChart.resize(); });
+
+        // 2) Most Active Accounts per Day (time spent)
+        const mostActiveCtx = document.getElementById('chartMostActive').getContext('2d');
+        const users = ['alex','jordan','sam','taylor','morgan','river','casey'];
+        const minutesSpent = generateArray(users.length, 60, 480);
+        const sortedActive = sortDescByValue(users, minutesSpent);
+        const mostActiveChart = new Chart(mostActiveCtx, { type:'bar', data:{ labels: sortedActive.labels, datasets:[{ label:'Minutes', data: sortedActive.values, backgroundColor:'#06BBCC', borderColor:'#049aa8', borderWidth:1 }] }, options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{ x:{ beginAtZero:true } } } });
+        window.addEventListener('resize', ()=> mostActiveChart.resize());
+
+        // 3) Most Accurately Predicted Word
+        const accuracyCtx = document.getElementById('chartAccuracy').getContext('2d');
+        const words = ['HELLO','THANK YOU','PLEASE','YES','NO','GOOD','BYE'];
+        const acc = generateArray(words.length, 70, 98);
+        const sortedAcc = sortDescByValue(words, acc);
+        const accuracyChart = new Chart(accuracyCtx, { type:'bar', data:{ labels: sortedAcc.labels, datasets:[{ label:'Avg Accuracy %', data: sortedAcc.values, backgroundColor:'#20c997', borderColor:'#0ea97d', borderWidth:1 }] }, options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(ctx)=> ctx.parsed.x + '%'} } }, scales:{ x:{ beginAtZero:true, max:100 } } } });
+        window.addEventListener('resize', ()=> accuracyChart.resize());
+
+        // 4) Finished Exercises (week/month/year toggle)
+        const finishedCtx = document.getElementById('chartFinished').getContext('2d');
+        const weekLabels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+        const weekVals = generateArray(7, 5, 40);
+        const monthLabels = Array.from({length:12}, (_,i)=> new Date(0,i).toLocaleString('en',{month:'short'}));
+        const monthVals = generateArray(12, 50, 400);
+        const yearLabels = Array.from({length:5}, (_,i)=> `${new Date().getFullYear()-4+i}`);
+        const yearVals = generateArray(5, 500, 4000);
+        let finishedChart = new Chart(finishedCtx, { type:'line', data:{ labels: weekLabels, datasets:[{ label:'Finished', data: weekVals, borderColor:'#06BBCC', backgroundColor:'rgba(6,187,204,0.15)', fill:true, tension:0.35 }] }, options:{ responsive:true, maintainAspectRatio:false } });
+        document.getElementById('finishedMode').addEventListener('change', (e)=>{
+            const mode = e.target.value;
+            if (mode==='week'){ finishedChart.data.labels = weekLabels; finishedChart.data.datasets[0].data = weekVals; }
+            if (mode==='month'){ finishedChart.data.labels = monthLabels; finishedChart.data.datasets[0].data = monthVals; }
+            if (mode==='year'){ finishedChart.data.labels = yearLabels; finishedChart.data.datasets[0].data = yearVals; }
+            finishedChart.update();
         });
+        window.addEventListener('resize', ()=> finishedChart.resize());
 
-        // Students by Difficulty (Horizontal Bar)
-        const sbdCtx = document.getElementById('studentsByDifficultyChart').getContext('2d');
-        const sbdLabels = ['Beginner', 'Intermediate', 'Advanced'];
-        const sbdValues = [
-            <?php echo (int)$students_by_difficulty['beginner']; ?>,
-            <?php echo (int)$students_by_difficulty['intermediate']; ?>,
-            <?php echo (int)$students_by_difficulty['advanced']; ?>
-        ];
-        new Chart(sbdCtx, {
-            type: 'bar',
-            data: {
-                labels: sbdLabels,
-                datasets: [{ label: 'Students', data: sbdValues, backgroundColor: ['#20c997', '#ffc107', '#dc3545'], borderColor: ['#0ea97d', '#d39e00', '#c82333'], borderWidth: 1 }]
-            },
-            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
-        , plugins: [simpleValueLabels] });
-
-        // Active Users (Last 30 Minutes) - Realtime Line
-        const auCtx = document.getElementById('activeUsersChart').getContext('2d');
-        let auChart = null;
-
-        async function fetchActiveUsers() {
-            try {
-                const res = await fetch('api_active_users.php', { cache: 'no-store' });
-                const data = await res.json();
-                const labels = data.map(d => d.minute.slice(11)); // HH:MM
-                const values = data.map(d => parseInt(d.users));
-                return { labels, values };
-            } catch (e) {
-                return { labels: [], values: [] };
-            }
+        // 5) User Progress (search)
+        const userProgressCtx = document.getElementById('chartUserProgress').getContext('2d');
+        const baseDates = Array.from({length: 10}, (_,i)=> `Day ${i+1}`);
+        const userProgressChart = new Chart(userProgressCtx, { type:'line', data:{ labels: baseDates, datasets:[{ label:'Accomplished Words', data: movingAvg(generateArray(10,2,15)), borderColor:'#6610f2', backgroundColor:'rgba(102,16,242,0.15)', fill:true, tension:0.35 }] }, options:{ responsive:true, maintainAspectRatio:false } });
+        function loadUserFake(username){
+            const seed = username.split('').reduce((a,c)=> a + c.charCodeAt(0), 0) % 7 + 3;
+            const vals = movingAvg(Array.from({length:10}, (_,i)=> Math.max(0, Math.round(Math.sin((i+seed)/2)*8 + rand(3,12)))));
+            userProgressChart.data.datasets[0].data = vals;
+            userProgressChart.data.datasets[0].label = `Accomplished Words — ${username}`;
+            userProgressChart.update();
         }
+        document.getElementById('userSearchBtn').addEventListener('click', ()=>{
+            const name = (document.getElementById('userSearch').value || 'guest').trim();
+            loadUserFake(name);
+        });
+        window.addEventListener('resize', ()=> userProgressChart.resize());
 
-        async function initActiveUsersChart() {
-            const { labels, values } = await fetchActiveUsers();
-            const avg = values.length ? Math.round((values.reduce((a,b)=>a+b,0) / values.length) * 100) / 100 : 0;
-            const avgLine = Array(values.length).fill(avg);
-            const targetValue = Math.max(1, Math.round(TOTAL_USERS * 0.25));
-            const targetLine = Array(values.length).fill(targetValue);
-            const maxVal = values.length ? Math.max(...values) : 0;
-            const peakIdx = values.findIndex(v => v === maxVal);
-            const peakPoints = (peakIdx >= 0 && maxVal > 0) ? [{ x: labels[peakIdx], y: maxVal }] : [];
-            auChart = new Chart(auCtx, {
-                type: 'line',
-                data: { labels, datasets: [
-                    { label: 'Active Users', data: values, borderColor: '#6f42c1', backgroundColor: createLinearGradient(auCtx, '#6f42c1', 0.25), fill: true, tension: 0.35, pointRadius: 0, pointHoverRadius: 4 },
-                    { label: 'Avg (30m)', data: avgLine, borderColor: '#adb5bd', backgroundColor: 'transparent', borderDash: [6,6], pointRadius: 0, pointHoverRadius: 0 },
-                    { label: 'Target', data: targetLine, borderColor: '#198754', backgroundColor: 'transparent', borderDash: [4,4], pointRadius: 0, pointHoverRadius: 0 },
-                    { type: 'scatter', label: 'Peak', data: peakPoints, backgroundColor: '#dc3545', borderColor: '#dc3545', pointRadius: 5, pointHoverRadius: 6, showLine: false }
-                ] },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: true, position: 'bottom' },
-                        tooltip: {
-                            callbacks: {
-                                label: (ctx) => {
-                                    const v = ctx.parsed.y ?? ctx.parsed.x;
-                                    if (ctx.dataset.label && ctx.dataset.label.startsWith('Avg')) {
-                                        return `Avg (30m): ${v}`;
-                                    } else if (ctx.dataset.label === 'Target') {
-                                        return `Target: ${v}`;
-                                    } else if (ctx.dataset.type === 'scatter' || ctx.dataset.label === 'Peak') {
-                                        const pctP = TOTAL_USERS > 0 ? Math.round((v / TOTAL_USERS) * 100) : 0;
-                                        return `Peak: ${v}${TOTAL_USERS>0?` (${pctP}%)`:''}`;
-                                    }
-                                    const pct = TOTAL_USERS > 0 ? Math.round((v / TOTAL_USERS) * 100) : 0;
-                                    return `Active Users: ${v}${TOTAL_USERS>0?` (${pct}%)`:''}`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            grid: { color: 'rgba(0,0,0,0.05)', drawBorder: true, borderColor: 'rgba(0,0,0,0.1)' },
-                            ticks: {
-                                maxTicksLimit: 8,
-                                callback: (val, idx, ticks) => {
-                                    // show every 5th label and the last
-                                    return (idx % 5 === 0 || idx === ticks.length - 1) ? auChart.data.labels[idx] : '';
-                                }
-                            }
-                        },
-                        y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(0,0,0,0.05)', drawBorder: true, borderColor: 'rgba(0,0,0,0.1)' }, suggestedMax: Math.max(5, Math.max(...values, 0) + 1) }
-                    }
-                }
-            });
-        }
-
-        async function refreshActiveUsersChart() {
-            if (!auChart) return;
-            const { labels, values } = await fetchActiveUsers();
-            const avg = values.length ? Math.round((values.reduce((a,b)=>a+b,0) / values.length) * 100) / 100 : 0;
-            const targetValue = Math.max(1, Math.round(TOTAL_USERS * 0.25));
-            const maxVal = values.length ? Math.max(...values) : 0;
-            const peakIdx = values.findIndex(v => v === maxVal);
-            const peakPoints = (peakIdx >= 0 && maxVal > 0) ? [{ x: labels[peakIdx], y: maxVal }] : [];
-            auChart.data.labels = labels;
-            auChart.data.datasets[0].data = values;
-            auChart.data.datasets[1].data = Array(values.length).fill(avg);
-            auChart.data.datasets[2].data = Array(values.length).fill(targetValue);
-            auChart.data.datasets[3].data = peakPoints;
-            auChart.options.scales.y.suggestedMax = Math.max(5, Math.max(...values, 0) + 1);
-            auChart.update('none');
-        }
-
-        async function refreshActiveUsersNowBadge() {
-            try {
-                const res = await fetch('api_active_users_now.php', { cache: 'no-store' });
-                const data = await res.json();
-                const totalEl = document.querySelector('#activeUsersNowBadge');
-                // Best-effort total: use total registered users from PHP stats
-                const totalUsers = <?php echo (int)$stats['total_users']; ?>;
-                totalEl.textContent = `Active now: ${data.active} / ${totalUsers}`;
-            } catch (e) {
-                // ignore
-            }
-        }
-
-        initActiveUsersChart();
-        refreshActiveUsersNowBadge();
-        setInterval(() => { refreshActiveUsersChart(); refreshActiveUsersNowBadge(); }, 10000);
-
-        // Average Score by Difficulty (Horizontal Bar with Value Colors)
-        const asbdCtx = document.getElementById('avgScoreByDifficultyChart').getContext('2d');
-        const asbdLabels = ['Beginner', 'Intermediate', 'Advanced'];
-        const asbdValues = [
-            <?php echo (float)$avg_score_by_difficulty['beginner']; ?>,
-            <?php echo (float)$avg_score_by_difficulty['intermediate']; ?>,
-            <?php echo (float)$avg_score_by_difficulty['advanced']; ?>
-        ];
-        const asbdColors = asbdValues.map(v => v >= 80 ? '#198754' : (v >= 60 ? '#ffc107' : '#dc3545'));
-        const asbdBorders = asbdValues.map(v => v >= 80 ? '#157347' : (v >= 60 ? '#d39e00' : '#c82333'));
-        new Chart(asbdCtx, {
-            type: 'bar',
-            data: { labels: asbdLabels, datasets: [{ label: 'Avg Score', data: asbdValues, backgroundColor: asbdColors, borderColor: asbdBorders, borderWidth: 1 }] },
-            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, max: 100 } } }
-        , plugins: [simpleValueLabels] });
-
-        // Top Active Quizzes (Horizontal Bar)
-        const taqCtx = document.getElementById('topActiveQuizzesChart').getContext('2d');
-        const taqData = <?php echo json_encode($top_active_quizzes); ?>;
-        const taqLabels = taqData.map(item => item.title);
-        const taqCounts = taqData.map(item => parseInt(item.students));
-        new Chart(taqCtx, {
-            type: 'bar',
-            data: { labels: taqLabels, datasets: [{ label: 'Students', data: taqCounts, backgroundColor: '#fd7e14', borderColor: '#e96b00', borderWidth: 1 }] },
-            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
-        , plugins: [simpleValueLabels] });
+        // 6) Signed-in vs Guest Trend
+        const sgCtx = document.getElementById('chartSigninVsGuest').getContext('2d');
+        const sgLabels = Array.from({length:12}, (_,i)=> new Date(0,i).toLocaleString('en',{month:'short'}));
+        const signedIn = generateArray(12, 40, 180);
+        const guests = generateArray(12, 20, 160);
+        const sgChart = new Chart(sgCtx, { type:'line', data:{ labels: sgLabels, datasets:[ { label:'Signed-in', data: signedIn, borderColor:'#0d6efd', backgroundColor:'rgba(13,110,253,0.15)', fill:true, tension:0.35 }, { label:'Guests', data: guests, borderColor:'#dc3545', backgroundColor:'rgba(220,53,69,0.12)', fill:true, tension:0.35 } ] }, options:{ responsive:true, maintainAspectRatio:false } });
+        window.addEventListener('resize', ()=> sgChart.resize());
     </script>
 </body>
 </html> 

@@ -6,7 +6,22 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 include 'config.php';
+include 'user_helper.php';
 $user_id = $_SESSION['user_id'];
+
+// Get user info for navbar
+$userInitials = 'U';
+$userDisplayName = 'User';
+$sql = "SELECT username FROM users WHERE user_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$stmt->bind_result($username);
+if ($stmt->fetch()) {
+    $userInitials = getUserInitials($username);
+    $userDisplayName = getUserDisplayName($username);
+}
+$stmt->close();
 
 // Define mapping for quiz names
 $quiz_names = ['numbers', 'alphabet', 'greetings', 'commonVerbs', 'nouns', 'adjectives', 'questions'];
@@ -177,7 +192,7 @@ try {
                 <a href="advanced_quiz.php" class="nav-item nav-link">Advanced Quiz</a>        
                 <a href="about.php" class="nav-item nav-link">About Us</a>
                 <a href="progress.php" class="nav-item nav-link progress-btn">
-                    <i class="fa-solid fa-user fa-lg me-2"></i><span class="progress-text">Progress</span></a>     
+                    <span class="user-initials me-2"><?php echo $userInitials; ?></span><span class="progress-text">Progress</span></a>     
            </div>
         </div>
     </nav>

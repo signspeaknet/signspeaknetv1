@@ -1,3 +1,26 @@
+<?php
+session_start();
+include 'user_helper.php';
+
+// Get user info if logged in
+$userInitials = 'U';
+$userDisplayName = 'User';
+if (isset($_SESSION['user_id'])) {
+    include 'config.php';
+    $user_id = $_SESSION['user_id'];
+    
+    $sql = "SELECT username FROM users WHERE user_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $stmt->bind_result($username);
+    if ($stmt->fetch()) {
+        $userInitials = getUserInitials($username);
+        $userDisplayName = getUserDisplayName($username);
+    }
+    $stmt->close();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -61,7 +84,11 @@
                 <a href="advanced_quiz.php" class="nav-item nav-link">Advanced Quiz</a>
                 <a href="about.php" class="nav-item nav-link active">About Us</a>
                 <a href="progress.php" class="nav-item nav-link progress-btn">
+                    <?php if (isset($_SESSION['user_id'])): ?>
+                    <span class="user-initials me-2"><?php echo $userInitials; ?></span>
+                    <?php else: ?>
                     <i class="fa-solid fa-user fa-lg me-2"></i>
+                    <?php endif; ?>
                     <span class="progress-text">Progress</span>
                 </a>
             </div>

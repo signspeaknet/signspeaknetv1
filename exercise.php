@@ -4,6 +4,25 @@ if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit();
 }
+
+include 'user_helper.php';
+
+// Get user info for navbar
+$userInitials = 'U';
+$userDisplayName = 'User';
+include 'config.php';
+$user_id = $_SESSION['user_id'];
+
+$sql = "SELECT username FROM users WHERE user_id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$stmt->bind_result($username);
+if ($stmt->fetch()) {
+    $userInitials = getUserInitials($username);
+    $userDisplayName = getUserDisplayName($username);
+}
+$stmt->close();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -63,7 +82,7 @@ if (!isset($_SESSION['user_id'])) {
                 <a href="advanced_quiz.php" class="nav-item nav-link">Advanced Quiz</a>        
                 <a href="about.php" class="nav-item nav-link">About Us</a>
                 <a href="progress.php" class="nav-item nav-link progress-btn">
-                    <i class="fa-solid fa-user fa-lg me-2"></i><span class="progress-text">Progress</span></a>     
+                    <span class="user-initials me-2"><?php echo $userInitials; ?></span><span class="progress-text">Progress</span></a>     
            </div>
         </div>
     </nav>
