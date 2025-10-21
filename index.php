@@ -26,7 +26,7 @@ if (isset($_SESSION['user_id'])) {
 
 <head>
     <meta charset="utf-8">
-    <title>SignSpeak Index</title>
+    <title>SignSpeak</title>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <meta content="" name="keywords">
     <meta content="" name="description">
@@ -72,7 +72,8 @@ if (isset($_SESSION['user_id'])) {
     <!-- Navbar Start -->
     <nav class="navbar navbar-expand-lg bg-white navbar-light shadow sticky-top p-0">
         <a href="index.php" class="navbar-brand d-flex align-items-center px-4 px-lg-5">
-            <h2 class="m-0 text-primary"><i class="fa-solid fa-hands-asl-interpreting"></i>SignSpeak</h2>
+            <img src="img/logo-ss.png?v=<?php echo time(); ?>" alt="SignSpeak" style="height:36px; width:auto; display:inline-block;" class="me-2" onerror="this.src='img/logo-ss.PNG';this.onerror=null;">
+            <h2 class="m-0 text-primary">SignSpeak</h2>
         </a>
         <button type="button" class="navbar-toggler me-4" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
             <span class="navbar-toggler-icon"></span>
@@ -81,8 +82,6 @@ if (isset($_SESSION['user_id'])) {
             <div class="navbar-nav ms-auto p-4 p-lg-0">
                 <a href="index.php" class="nav-item nav-link">Home</a>
                 <a href="tutorial.php" class="nav-item nav-link">Tutorial</a>
-                <a href="exercise.php" class="nav-item nav-link">Exercise</a>
-                <a href="advanced_quiz.php" class="nav-item nav-link">Advanced Quiz</a>        
                 <a href="about.php" class="nav-item nav-link">About Us</a>
                 <a href="progress.php" class="nav-item nav-link progress-btn">
                     <?php if (isset($_SESSION['user_id'])): ?>
@@ -109,7 +108,18 @@ if (isset($_SESSION['user_id'])) {
                             <h5 class="text-primary text-uppercase mb-3 animated slideInDown">learn Sign language</h5>
                             <h3 class="display-3 text-white animated slideInDown">Breaking barriers,<br> one sign at a time.</h3>
                             <p class="fs-5 text-white mb-4 pb-2">Bridging Gaps, One Gesture at a Time – <br> Empowering Communication for Every Voice.</p>
-                            <a href="translate.php" class="btn btn-primary py-md-3 px-md-5 ms- animated slideInLeft">Proceed To Translate <i class="fa-solid fa-expand fa-lg m-2"></i></a>            
+                            
+                            <!-- Active Users Display -->
+                            <?php if (isset($_SESSION['user_id'])): ?>
+                            <div class="mb-3">
+                                <span class="badge bg-success fs-6" id="active-users-display">
+                                    <i class="fa fa-users me-1"></i>
+                                    <span id="active-users-count">0</span> users online
+                                </span>
+                            </div>
+                            <?php endif; ?>
+                            
+                            <a href="translate.php?auto_start=1" class="btn btn-primary py-md-3 px-md-5 ms- animated slideInLeft">Proceed To Translate <i class="fa-solid fa-expand fa-lg m-2"></i></a>            
                     </div>
                 </div>
             </div> 
@@ -145,8 +155,6 @@ if (isset($_SESSION['user_id'])) {
                     <div class="service-item text-center pt-3">
                         <div class="p-4">
                             <i class="fa fa-3x fa-home text-primary mb-4"></i>
-                            <h5 class="mb-3">Exercise</h5>
-                            <p>SignSpeak offers interactive exercises that help users practice and improve their sign language skills. With engaging challenges and real-time feedback, it encourages daily learning, boosts confidence, and supports better communication through consistent practice.</p>
                         </div>
                     </div>
                 </div>
@@ -295,7 +303,6 @@ if (isset($_SESSION['user_id'])) {
                     <h4 class="text-white mb-3">Quick Links</h4>
                     <a class="btn btn-link" href="about.php">About Us</a>
                     <a class="btn btn-link" href="tutorial.php">Tutorials</a>
-                    <a class="btn btn-link" href="exercise.php">Exercises</a>
                     <a class="btn btn-link" href="progress.php">Progress Tracking</a>
                     <a class="btn btn-link" href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Privacy Policy</a>
                     <a class="btn btn-link" href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms & Conditions</a>
@@ -378,6 +385,16 @@ if (isset($_SESSION['user_id'])) {
 
     <!-- Template Javascript -->
     <script src="js/main.js"></script>
+    
+    <!-- User Presence Tracking -->
+    <?php if (isset($_SESSION['user_id'])): ?>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="js/user-presence.js"></script>
+    <script>
+        // Set the current user ID for the presence manager
+        window.currentUserId = <?php echo $_SESSION['user_id']; ?>;
+    </script>
+    <?php endif; ?>
 </body>
 
 </html>

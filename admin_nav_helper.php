@@ -27,14 +27,6 @@ function renderAdminNav() {
             'icon' => 'fas fa-users',
             'text' => 'User Management'
         ],
-        'admin_quizzes.php' => [
-            'icon' => 'fas fa-chart-line',
-            'text' => 'Basic Quiz Analytics'
-        ],
-        'admin_advanced_quizzes.php' => [
-            'icon' => 'fas fa-star',
-            'text' => 'Advanced Quiz Management'
-        ],
         'admin_profile.php' => [
             'icon' => 'fas fa-user-cog',
             'text' => 'Profile'
@@ -42,10 +34,7 @@ function renderAdminNav() {
     ];
     
     // Special handling for sub-pages
-    $parent_pages = [
-        'admin_manage_quiz_questions.php' => 'admin_advanced_quizzes.php',
-        'admin_edit_advanced_quiz.php' => 'admin_advanced_quizzes.php'
-    ];
+    $parent_pages = [];
     
     // Check if current page is a sub-page
     if (isset($parent_pages[$current_page])) {

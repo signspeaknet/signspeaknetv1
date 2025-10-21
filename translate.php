@@ -3,13 +3,14 @@
 
 <head>
     <meta charset="utf-8">
-    <title>SignSpeak Translate</title>
+    <title>SignSpeak</title>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <meta content="" name="keywords">
     <meta content="" name="description">
 
     <!-- Favicon -->
     <link href="img/favicon.ico" rel="icon">
+    <link rel="shortcut icon" href="img/logo-ss.png" type="image/x-icon">
 
     <!-- Google Web Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -35,8 +36,8 @@
 
     <style>
         :root {
-            --primary-color: #06BBCC;
-            --secondary-color: #06BBCC;
+            --primary-color: #007f8b;
+            --secondary-color: #2196f3;
             --error-color: #dc3545;
             --success-color: #28a745;
             --warning-color: #ffc107;
@@ -45,63 +46,42 @@
             --border-radius: 8px;
             --box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        body { background: var(--background-color); }
 
         .main-container {
             display: flex;
-            align-items: center;
-            justify-content: center;
+            flex-direction: row;
+            align-items: flex-start;
             width: 100%;
             max-width: 1200px;
             margin: 5em auto 2em auto;
-            padding: 0 1em;
-        }
-        .panel {
-            position: relative;
-            background: #ffffff;
-            border-radius: 28px;
-            box-shadow: 0 16px 40px rgba(0,0,0,0.12);
-            padding: 18px;
-            width: 100%;
-            max-width: 1100px;
-        }
-
-        .card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 14px;
-        }
-
-        .card-title {
-            font-weight: 700;
-            font-size: 14px;
-            letter-spacing: 1px;
-            color: #6b7280;
-            text-transform: uppercase;
-        }
-
-        .status-badge {
-            display: inline-block;
-            background: #e6f7ee;
-            color: #15803d;
-            padding: 6px 10px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 600;
+            gap: 1.5em;
+            padding: 0 0.5em;
         }
 
         .videoView {
             position: relative;
-            width: 100%;
-            aspect-ratio: 16/9;
+            width: 55%;
+            aspect-ratio: 9/16;
             margin: 0;
-            max-height: 70vh;
-            border-radius: 18px;
+            max-height: 80vh;
+            border-radius: var(--border-radius);
             overflow: hidden;
-            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04);
-            background-color: #f7f9fc; /* whitish */
-            border: 1px solid #e5e7eb;
+            box-shadow: var(--box-shadow);
+            background-color: #f8f9fa;
+            border: 4px solid transparent;
+            transition: border-color 0.3s ease;
+        }
+
+        .videoView.border-green {
+            border-color: #28a745;
+        }
+
+        .videoView.border-yellow {
+            border-color: #ffc107;
+        }
+
+        .videoView.border-red {
+            border-color: #dc3545;
         }
 
         .silhouette-placeholder {
@@ -134,6 +114,16 @@
             color: #666;
         }
 
+        .silhouette-placeholder.auto-start::after {
+            content: "Starting camera...";
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
         video, canvas {
             position: absolute;
             top: 0;
@@ -151,9 +141,11 @@
         .controls-container {
             display: flex;
             flex-direction: column;
-            align-items: stretch;
-            width: 100%;
+            align-items: flex-start;
+            width: 45%;
             margin: 0;
+            max-width: 300px;
+            padding-top: 0.5em;
             gap: 0.8em;
         }
 
@@ -161,25 +153,125 @@
             pointer-events: none;
         }
 
-        /* Caption overlay */
-        #predictionText {
+        .gesture-square {
             position: absolute;
-            left: 50%;
-            bottom: 56px;
-            transform: translateX(-50%);
-            color: #0f172a;
-            background: rgba(255,255,255,0.85);
-            border: 1px solid rgba(0,0,0,0.08);
-            -webkit-backdrop-filter: blur(6px);
-            backdrop-filter: blur(6px);
-            border-radius: 16px;
-            padding: 14px 22px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-size: 28px;
-            min-width: 60%;
+            top: 20px;
+            left: 20px;
+            width: 80px;
+            height: 80px;
+            background-color: rgba(40, 167, 69, 0.3);
+            border: 3px solid #28a745;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
             text-align: center;
+            line-height: 1.2;
+        }
+
+        .gesture-square.active {
+            background-color: rgba(40, 167, 69, 0.6);
+            border-color: #28a745;
+            animation: pulse 0.5s ease-in-out infinite alternate;
+        }
+
+        .gesture-square.delay {
+            background-color: rgba(255, 193, 7, 0.6);
+            border-color: #ffc107;
+            animation: pulse 0.4s ease-in-out infinite alternate;
+        }
+
+        .gesture-square.recording {
+            background-color: rgba(220, 53, 69, 0.6);
+            border-color: #dc3545;
+            animation: pulse 0.3s ease-in-out infinite alternate;
+        }
+
+        .gesture-square.pressed {
+            background-color: rgba(40, 167, 69, 0.6);
+            border-color: #ffffff;
+            transform: scale(0.95);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+
+        .camera-feedback {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.4);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 25px;
+            z-index: 10;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .feedback-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feedback-icon {
+            font-size: 24px;
+            animation: bounce 1s ease-in-out infinite;
+        }
+
+        .feedback-text {
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .camera-feedback.hold {
+            background: rgba(255, 193, 7, 0.4);
+            border-color: #ff8c00;
+        }
+
+        .camera-feedback.delay {
+            background: rgba(23, 162, 184, 0.4);
+            border-color: #138496;
+        }
+
+        .camera-feedback.recording {
+            background: rgba(220, 53, 69, 0.4);
+            border-color: #c82333;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        #predictionText {
+            width: 100%;
+            min-height: 100px;
+            margin: 10px 0;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: var(--border-radius);
+            background-color: white;
+            font-size: 1.1em;
+            line-height: 1.4;
+            overflow-y: auto;
+            text-align: left;
+            box-shadow: var(--box-shadow);
+            transition: border-color 0.3s ease;
         }
 
         #predictionText:focus {
@@ -187,36 +279,12 @@
             outline: none;
         }
 
-        /* Bottom control dock */
-        .dock {
-            position: absolute;
-            left: 50%;
-            bottom: 8px;
-            transform: translateX(-50%);
+        .button-group {
             display: flex;
-            align-items: center;
-            gap: 28px;
-        }
-
-        .circle-btn {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
+            gap: 0.5em;
+            width: 100%;
             justify-content: center;
-            color: #0f172a;
-            background: #ffffff;
-            border: 1px solid rgba(0,0,0,0.08);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
         }
-
-        .circle-btn.primary {
-            box-shadow: 0 0 20px rgba(6, 187, 204, 0.6), inset 0 0 12px rgba(6,187,204,0.45);
-            background: radial-gradient(circle at 50% 40%, rgba(6,187,204,0.35), rgba(0,0,0,0.2));
-        }
-
-        .dock .label { margin-top: 6px; text-align: center; font-size: 11px; color: #94a3b8; font-weight: 700; }
 
         .mdc-button {
             min-width: 140px;
@@ -242,34 +310,23 @@
         }
 
         #backspaceButton {
-            background-color: #fee2e2;
-            color: #b91c1c;
-            border: none;
+            background-color: var(--error-color);
+            color: white;
         }
 
-        #startButton.primary-cta {
-            background-color: #06BBCC;
-            color: #ffffff;
-            border: none;
-            height: 56px;
-            border-radius: 14px;
-            font-weight: 700;
-            font-size: 16px;
+        #backspaceButton:hover {
+            background-color: #c82333;
         }
 
-        /* Status badge */
         #distanceStatus {
-            position: absolute;
-            top: 12px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 12px;
-            font-weight: 800;
-            padding: 6px 12px;
-            border-radius: 999px;
-            background-color: #daf6f8;
-            color: #055a63;
-            border: 1px solid rgba(0,0,0,0.05);
+            font-size: 1.2em;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: var(--border-radius);
+            background-color: white;
+            box-shadow: var(--box-shadow);
+            width: 100%;
+            text-align: center;
         }
 
         #recordingProgress {
@@ -300,6 +357,70 @@
             flex-direction: column;
             margin-bottom: 1em;
             gap: 1em;
+        }
+
+        #cameraLoadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+            text-align: center;
+        }
+
+        #cameraLoadingBanner {
+            background: linear-gradient(135deg, #007f8b, #2196f3);
+            padding: 30px 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 90%;
+            animation: slideInDown 0.5s ease-out;
+        }
+
+        #cameraLoadingBanner h3 {
+            margin: 0 0 15px 0;
+            font-size: 1.5em;
+            font-weight: 600;
+        }
+
+        #cameraLoadingBanner p {
+            margin: 0 0 20px 0;
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .camera-loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         .mdc-linear-progress {
@@ -356,14 +477,84 @@
 
         @media (max-width: 768px) {
             .main-container {
+                flex-direction: row;
+                align-items: flex-start;
                 margin: 5em auto 2em auto;
-                padding: 0 0.75em;
+                gap: 0.5em;
+                padding: 0 0.5em;
             }
-            .videoView { max-width: none; }
-            #predictionText { font-size: 20px; padding: 10px 14px; min-width: 70%; bottom: 58px; }
-            .dock { gap: 18px; }
-            .back-button-container { top: 10px; left: 10px; }
-            .back-button-container .btn { padding: 6px 12px; font-size: 0.9em; }
+
+            .videoView {
+                width: 60%;
+                max-width: none;
+            }
+
+            .controls-container {
+                width: 40%;
+                max-width: none;
+                padding-top: 0;
+            }
+
+            .button-group {
+                flex-direction: column;
+                gap: 0.3em;
+            }
+
+            .mdc-button {
+                min-width: unset;
+                width: 100%;
+                height: 36px;
+                padding: 0 8px;
+                font-size: 0.8em;
+            }
+
+            .mdc-button .material-icons {
+                font-size: 16px;
+                margin-right: 4px;
+            }
+
+            #predictionText {
+                min-height: 60px;
+                font-size: 0.9em;
+                padding: 8px;
+            }
+
+            #distanceStatus {
+                font-size: 0.9em;
+                padding: 6px;
+            }
+
+            #recordingProgress {
+                height: 6px;
+            }
+
+            .back-button-container {
+                top: 10px;
+                left: 10px;
+            }
+
+            .back-button-container .btn {
+                padding: 6px 12px;
+                font-size: 0.9em;
+            }
+
+            #cameraLoadingBanner {
+                padding: 20px 25px;
+                max-width: 350px;
+            }
+
+            #cameraLoadingBanner h3 {
+                font-size: 1.3em;
+            }
+
+            #cameraLoadingBanner p {
+                font-size: 1em;
+            }
+
+            .camera-loading-spinner {
+                width: 35px;
+                height: 35px;
+            }
         }
     </style>
 </head>
@@ -391,37 +582,38 @@
     </div>
 
     <div class="main-container">
-        <div class="panel">
-            <div class="videoView"> 
-                <div id="distanceStatus">STATUS: ACTIVELY TRANSLATING</div>
-                <div class="silhouette-placeholder"></div>
-                <video id="webcam" autoplay playsinline></video>
-                <canvas id="output_canvas"></canvas>
-                <div id="predictionText" contenteditable="true" spellcheck="false"></div>
-                <div class="dock">
-                    <div style="display:flex; flex-direction:column; align-items:center;">
-                        <button id="backspaceButton" class="circle-btn" title="Undo">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                        <div class="label">UNDO</div>
-                    </div>
-                    <div style="display:flex; flex-direction:column; align-items:center;">
-                        <button id="startButton" class="circle-btn primary" title="Play/Pause">
-                            <i class="fas fa-pause" id="playPauseIcon"></i>
-                        </button>
-                        <div class="label">PAUSE</div>
-                    </div>
-                    <div style="display:flex; flex-direction:column; align-items:center;">
-                        <button id="saveButton" class="circle-btn" title="Save/Copy">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                        </button>
-                        <div class="label">SAVE</div>
-                    </div>
+        <div class="videoView"> 
+            <div class="silhouette-placeholder"></div>
+            <video id="webcam" autoplay playsinline></video>
+            <canvas id="output_canvas"></canvas>
+            <div id="gestureSquare" class="gesture-square"></div>
+            <div id="cameraFeedback" class="camera-feedback">
+                <div class="feedback-content">
+                    <div class="feedback-icon">👆</div>
+                    <div class="feedback-text">Touch the green square with your finger tips</div>
                 </div>
             </div>
-            <progress id="recordingProgress" value="0" max="100" style="display:none; width:100%; margin-top:10px;"></progress>
         </div>
-    </div>
+  
+        <div class="controls-container">
+            <div id="predictionText" contenteditable="true" spellcheck="false"></div>
+            <div class="button-group">
+                <button id="backspaceButton" class="mdc-button mdc-button--raised">
+                    <span class="mdc-button__ripple"></span>
+                    <span class="material-icons">backspace</span>
+                    <span class="mdc-button__label">Backspace</span>
+                </button>
+            </div>
+            <progress id="recordingProgress" value="0" max="100"></progress>    
+            <div id="distanceStatus"></div>
+            <div id="gestureStatus" style="font-size: 1.1em; font-weight: bold; padding: 10px; border-radius: var(--border-radius); background-color: white; box-shadow: var(--box-shadow); width: 100%; text-align: center; margin-top: 10px;">
+                Put index and middle finger tips in the green square for 1 second to record
+            </div>
+            <div class="button-group">
+                <!-- Gesture-based recording - no button needed -->
+      </div>
+        </div>
+      </div>
   
     <div id="loadingContainer">
         <div id="loadingText">Loading MediaPipe models, please wait...</div>
@@ -436,6 +628,15 @@
             <div class="mdc-linear-progress__bar mdc-linear-progress__secondary-bar">
                 <span class="mdc-linear-progress__bar-inner"></span>
             </div>
+        </div>
+    </div>
+
+    <!-- Camera Loading Overlay -->
+    <div id="cameraLoadingOverlay">
+        <div id="cameraLoadingBanner">
+            <h3><i class="fas fa-camera me-2"></i>Starting Up Camera</h3>
+            <p>Please allow camera access and wait while we initialize the translation system...</p>
+            <div class="camera-loading-spinner"></div>
         </div>
     </div>
 
@@ -466,9 +667,12 @@
         const distanceStatus = document.getElementById("distanceStatus");
     
         const loadingContainer = document.getElementById("loadingContainer");
-        const startButton = document.getElementById("startButton");
-        const recordButton = document.getElementById("recordButton");
         const recordingProgress = document.getElementById("recordingProgress");
+        const cameraLoadingOverlay = document.getElementById("cameraLoadingOverlay");
+        const gestureStatus = document.getElementById("gestureStatus");
+        const gestureSquare = document.getElementById("gestureSquare");
+        const cameraFeedback = document.getElementById("cameraFeedback");
+        const videoView = document.querySelector('.videoView');
     
         let poseLandmarker, handLandmarker;
         let webcamRunning = false;
@@ -476,35 +680,54 @@
         let recordedFrames = [];
         const selectedPoseIndices = [0, 1, 4, 9, 10, 11, 12, 13, 14, 15, 16];
         const shoulderIndices = [11, 12];
+        
+        // Gesture detection variables
+        let gestureHoldStart = null;
+        let gestureHoldDuration = 0;
+        const GESTURE_HOLD_THRESHOLD = 1000; // 1 second in milliseconds
+        const DELAY_BEFORE_RECORDING = 1500; // 1.5 seconds delay
+        let isGestureDetected = false;
+        let isInDelayPhase = false;
+        let delayStartTime = null;
+        let lastGestureTime = 0;
     
         const SERVER_URL = "https://flask-tester-cx5v.onrender.com/predict";
-    
+
         window.addEventListener("DOMContentLoaded", async () => {
+            // Show loading banner during model download
+            cameraLoadingOverlay.style.display = "flex";
+            document.getElementById('cameraLoadingBanner').innerHTML = `
+                <h3><i class="fas fa-download me-2"></i>Downloading AI Models</h3>
+                <p>Please wait while we download the required AI models for sign language recognition...</p>
+                <div class="camera-loading-spinner"></div>
+            `;
+            
             await initMediaPipe();
             loadingContainer.style.display = "none";
-            startButton.style.display = "block";
-            recordButton.style.display = "block";
+            
+            // Automatically start camera (no button needed)
+                // Update placeholder text for auto-start
+                document.querySelector('.silhouette-placeholder').classList.add('auto-start');
+            // Initialize square text
+            gestureSquare.textContent = "Touch";
+            // Update loading banner for camera startup
+            document.getElementById('cameraLoadingBanner').innerHTML = `
+                <h3><i class="fas fa-camera me-2"></i>Starting Up Camera</h3>
+                <p>Please allow camera access and wait while we initialize the translation system...</p>
+                <div class="camera-loading-spinner"></div>
+            `;
+                // Automatically start the camera
+                setTimeout(async () => {
+                    if (!webcamRunning) {
+                        webcamRunning = true;
+                        await enableWebcam();
+                    }
+                }, 500); // Small delay to ensure everything is loaded
         });
     
-        // Play/Pause toggle: first click starts webcam, then toggles running
-        const playPauseIcon = document.getElementById('playPauseIcon');
-        startButton.addEventListener("click", async () => {
-            if (!webcamRunning) {
-                webcamRunning = true;
-                await enableWebcam();
-                if (playPauseIcon) playPauseIcon.className = 'fas fa-pause';
-                return;
-            }
-            webcamRunning = !webcamRunning;
-            if (webcamRunning) {
-                if (playPauseIcon) playPauseIcon.className = 'fas fa-pause';
-                window.requestAnimationFrame(predictWebcam);
-            } else {
-                if (playPauseIcon) playPauseIcon.className = 'fas fa-play';
-            }
-        });
     
-        recordButton.addEventListener("click", async () => {
+        // Gesture-based recording function
+        async function startGestureRecording() {
             if (recording) return;
             recording = true;
             recordedFrames = [];
@@ -517,11 +740,6 @@
             recordingProgress.style.display = "block";
             recordingProgress.value = 0;
             recordingProgress.max = totalFrames;
-
-            // Update button appearance
-            recordButton.classList.add('recording');
-            recordButton.querySelector('.material-icons').textContent = 'stop';
-            recordButton.querySelector('.mdc-button__label').textContent = 'Recording...';
 
             const intervalId = setInterval(async () => {
                 const nowInMs = performance.now();
@@ -573,10 +791,27 @@
                     clearInterval(intervalId);
                     recording = false;
                     
-                    // Reset button appearance
-                    recordButton.classList.remove('recording');
-                    recordButton.querySelector('.material-icons').textContent = 'fiber_manual_record';
-                    recordButton.querySelector('.mdc-button__label').textContent = 'Record';
+                    // Reset all states and square appearance
+                    gestureSquare.classList.remove('recording', 'delay', 'active', 'pressed');
+                    gestureSquare.textContent = "Touch";
+                    isGestureDetected = false;
+                    isInDelayPhase = false;
+                    gestureHoldStart = null;
+                    gestureHoldDuration = 0;
+                    delayStartTime = null;
+                    
+                    // Reset status message
+                    gestureStatus.textContent = "Put index and middle finger tips in the green square for 1 second to record";
+                    gestureStatus.style.color = "#6c757d";
+                    gestureStatus.style.backgroundColor = "white";
+                    
+                    // Reset camera border
+                    videoView.classList.remove('border-green', 'border-yellow', 'border-red');
+                    
+                    // Reset camera feedback
+                    cameraFeedback.classList.remove('hold', 'delay', 'recording');
+                    cameraFeedback.querySelector('.feedback-icon').textContent = '👆';
+                    cameraFeedback.querySelector('.feedback-text').textContent = 'Touch the green square with your finger tips';
                     
                     // Hide progress bar after a short delay
                     setTimeout(() => {
@@ -586,7 +821,7 @@
                     sendJSONToServer(recordedFrames);
                 }
             }, interval);
-        });
+        }
     
         const predictionText = document.getElementById('predictionText');
         const backspaceButton = document.getElementById('backspaceButton');
@@ -598,18 +833,6 @@
             currentText = words.join(' ') + (words.length > 0 ? ' ' : '');
             predictionText.textContent = currentText;
         });
-
-        // Save/Copy logic
-        const saveButton = document.getElementById('saveButton');
-        if (saveButton) {
-            saveButton.addEventListener('click', async () => {
-                try {
-                    await navigator.clipboard.writeText(predictionText.textContent || '');
-                    saveButton.classList.add('primary');
-                    setTimeout(()=> saveButton.classList.remove('primary'), 700);
-                } catch (e) { console.warn('Clipboard not available'); }
-            });
-        }
 
         async function sendJSONToServer(allFramesData) {
             const payload = { data: allFramesData };
@@ -670,24 +893,35 @@
         }
     
         async function enableWebcam() {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            video.srcObject = stream;
-            
-            // Hide silhouette and show video when camera starts
-            document.querySelector('.silhouette-placeholder').style.display = 'none';
-            video.style.display = 'block';
-            canvas.style.display = 'block';
-    
-            video.addEventListener("loadeddata", () => {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                video.width = video.videoWidth;
-                video.height = video.videoHeight;
-                const videoView = document.querySelector('.videoView');
-                videoView.style.width = video.videoWidth + 'px';
-                videoView.style.height = video.videoHeight + 'px';
-                predictWebcam();
-            });
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                
+                // Hide silhouette and show video when camera starts
+                document.querySelector('.silhouette-placeholder').style.display = 'none';
+                video.style.display = 'block';
+                canvas.style.display = 'block';
+        
+                video.addEventListener("loadeddata", () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    video.width = video.videoWidth;
+                    video.height = video.videoHeight;
+                    const videoView = document.querySelector('.videoView');
+                    videoView.style.width = video.videoWidth + 'px';
+                    videoView.style.height = video.videoHeight + 'px';
+                    
+                    // Hide camera loading overlay when camera is ready
+                    cameraLoadingOverlay.style.display = "none";
+                    
+                    predictWebcam();
+                });
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                // Hide camera loading overlay even if there's an error
+                cameraLoadingOverlay.style.display = "none";
+                alert('Camera access denied or not available. Please check your camera permissions.');
+            }
         }
     
         function detectDistance(poseLandmarks, videoWidth) {
@@ -717,6 +951,203 @@
                 return "Too far";
             } else {
                 return "Perfect distance";
+            }
+        }
+    
+        // Function to get square position and dimensions in video coordinates
+        function getSquareBounds() {
+            const videoView = document.querySelector('.videoView');
+            const square = document.getElementById('gestureSquare');
+            
+            const videoRect = videoView.getBoundingClientRect();
+            const squareRect = square.getBoundingClientRect();
+            
+            // Convert screen coordinates to video coordinates
+            const squareLeft = (squareRect.left - videoRect.left) / videoRect.width;
+            const squareTop = (squareRect.top - videoRect.top) / videoRect.height;
+            const squareWidth = squareRect.width / videoRect.width;
+            const squareHeight = squareRect.height / videoRect.height;
+            
+            return {
+                left: squareLeft,
+                top: squareTop,
+                right: squareLeft + squareWidth,
+                bottom: squareTop + squareHeight
+            };
+        }
+
+        // Function to detect if index and middle finger tips are in the green square
+        function detectFingerTipInSquare(handLandmarks) {
+            if (!handLandmarks || handLandmarks.length < 21) return false;
+            
+            // Get finger tip landmarks
+            const indexTip = handLandmarks[8];  // Index finger tip
+            const middleTip = handLandmarks[12]; // Middle finger tip
+            
+            if (!indexTip || !middleTip) return false;
+            
+            // Get square bounds
+            const squareBounds = getSquareBounds();
+            
+            // Check if both finger tips are within the square
+            const indexInSquare = indexTip.x >= squareBounds.left && 
+                                indexTip.x <= squareBounds.right &&
+                                indexTip.y >= squareBounds.top && 
+                                indexTip.y <= squareBounds.bottom;
+                                
+            const middleInSquare = middleTip.x >= squareBounds.left && 
+                                  middleTip.x <= squareBounds.right &&
+                                  middleTip.y >= squareBounds.top && 
+                                  middleTip.y <= squareBounds.bottom;
+            
+            return indexInSquare && middleInSquare;
+        }
+        
+        // Function to handle gesture detection
+        function handleGestureDetection(handResult) {
+            const currentTime = performance.now();
+            
+            // Handle delay phase
+            if (isInDelayPhase) {
+                const delayElapsed = currentTime - delayStartTime;
+                const remainingDelay = Math.max(0, DELAY_BEFORE_RECORDING - delayElapsed);
+                const delayProgress = Math.min(100, (delayElapsed / DELAY_BEFORE_RECORDING) * 100);
+                
+                gestureSquare.textContent = `${Math.ceil(remainingDelay / 1000)}s`;
+                gestureStatus.textContent = `Preparing to record... ${Math.ceil(remainingDelay / 1000)}s (${Math.round(delayProgress)}%)`;
+                gestureStatus.style.color = "#17a2b8";
+                gestureStatus.style.backgroundColor = "#d1ecf1";
+                
+                // Update camera feedback during delay
+                cameraFeedback.querySelector('.feedback-text').textContent = `Preparing to record... ${Math.ceil(remainingDelay / 1000)}s`;
+                
+                if (delayElapsed >= DELAY_BEFORE_RECORDING && !recording) {
+                    console.log("Delay completed - starting recording");
+                    gestureSquare.classList.remove('delay');
+                    gestureSquare.classList.add('recording');
+                    gestureSquare.textContent = "REC";
+                    gestureStatus.textContent = "Recording gesture...";
+                    gestureStatus.style.color = "#28a745";
+                    gestureStatus.style.backgroundColor = "#d4edda";
+                    
+                    // Update camera border for recording
+                    videoView.classList.remove('border-green', 'border-yellow');
+                    videoView.classList.add('border-red');
+                    
+                    // Update camera feedback for recording
+                    cameraFeedback.classList.remove('delay');
+                    cameraFeedback.classList.add('recording');
+                    cameraFeedback.querySelector('.feedback-icon').textContent = '🔴';
+                    cameraFeedback.querySelector('.feedback-text').textContent = 'Recording gesture...';
+                    startGestureRecording();
+                    // Reset all states
+                    isGestureDetected = false;
+                    isInDelayPhase = false;
+                    gestureHoldStart = null;
+                    gestureHoldDuration = 0;
+                    delayStartTime = null;
+                }
+                return;
+            }
+            
+            if (handResult.landmarks && handResult.landmarks.length > 0) {
+                const isGestureActive = detectFingerTipInSquare(handResult.landmarks[0]);
+                
+                if (isGestureActive && !isGestureDetected) {
+                    // Start of gesture
+                    gestureHoldStart = currentTime;
+                    isGestureDetected = true;
+                    gestureSquare.classList.add('active', 'pressed');
+                    gestureSquare.textContent = "Hold!";
+                    gestureStatus.textContent = "Fingers in square! Hold for 1 second...";
+                    gestureStatus.style.color = "#ffc107";
+                    gestureStatus.style.backgroundColor = "#fff3cd";
+                    
+                    // Update camera border
+                    videoView.classList.remove('border-yellow', 'border-red');
+                    videoView.classList.add('border-green');
+                    
+                    // Update camera feedback
+                    cameraFeedback.classList.add('hold');
+                    cameraFeedback.querySelector('.feedback-icon').textContent = '⏱️';
+                    cameraFeedback.querySelector('.feedback-text').textContent = 'Hold for 1 second...';
+                    console.log("Gesture started - finger tips in square");
+                } else if (isGestureActive && isGestureDetected) {
+                    // Continue holding gesture
+                    gestureHoldDuration = currentTime - gestureHoldStart;
+                    const remainingTime = Math.max(0, GESTURE_HOLD_THRESHOLD - gestureHoldDuration);
+                    const progress = Math.min(100, (gestureHoldDuration / GESTURE_HOLD_THRESHOLD) * 100);
+                    
+                    gestureSquare.textContent = `${Math.ceil(remainingTime / 1000)}s`;
+                    gestureStatus.textContent = `Hold in square... ${Math.ceil(remainingTime / 1000)}s remaining (${Math.round(progress)}%)`;
+                    gestureStatus.style.color = "#ffc107";
+                    gestureStatus.style.backgroundColor = "#fff3cd";
+                    
+                    // Check if held for required duration
+                    if (gestureHoldDuration >= GESTURE_HOLD_THRESHOLD && !recording) {
+                        console.log("Gesture held for required duration - starting delay phase");
+                        gestureSquare.classList.remove('active');
+                        gestureSquare.classList.add('delay');
+                        gestureSquare.textContent = "Wait";
+                        gestureStatus.textContent = "Hold complete! Preparing to record...";
+                        gestureStatus.style.color = "#17a2b8";
+                        gestureStatus.style.backgroundColor = "#d1ecf1";
+                        
+                        // Update camera border for delay phase
+                        videoView.classList.remove('border-green', 'border-red');
+                        videoView.classList.add('border-yellow');
+                        
+                        // Update camera feedback for delay phase
+                        cameraFeedback.classList.remove('hold');
+                        cameraFeedback.classList.add('delay');
+                        cameraFeedback.querySelector('.feedback-icon').textContent = '⏳';
+                        cameraFeedback.querySelector('.feedback-text').textContent = 'Preparing to record...';
+                        
+                        // Start delay phase
+                        isInDelayPhase = true;
+                        delayStartTime = currentTime;
+                        isGestureDetected = false;
+                        gestureHoldStart = null;
+                        gestureHoldDuration = 0;
+                    }
+                } else if (!isGestureActive && isGestureDetected) {
+                    // Gesture released
+                    isGestureDetected = false;
+                    gestureHoldStart = null;
+                    gestureHoldDuration = 0;
+                    gestureSquare.classList.remove('active', 'pressed');
+                    gestureSquare.textContent = "Touch";
+                    gestureStatus.textContent = "Put index and middle finger tips in the green square for 1 second to record";
+                    gestureStatus.style.color = "#6c757d";
+                    gestureStatus.style.backgroundColor = "white";
+                    
+                    // Reset camera border
+                    videoView.classList.remove('border-green', 'border-yellow', 'border-red');
+                    
+                    // Reset camera feedback
+                    cameraFeedback.classList.remove('hold', 'delay', 'recording');
+                    cameraFeedback.querySelector('.feedback-icon').textContent = '👆';
+                    cameraFeedback.querySelector('.feedback-text').textContent = 'Touch the green square with your finger tips';
+                    console.log("Gesture released - fingers left square");
+                }
+            } else {
+                // No hand detected, reset gesture
+                isGestureDetected = false;
+                gestureHoldStart = null;
+                gestureHoldDuration = 0;
+                gestureSquare.classList.remove('active', 'pressed');
+                gestureSquare.textContent = "Touch";
+                gestureStatus.textContent = "Put index and middle finger tips in the green square for 1 second to record";
+                gestureStatus.style.color = "#6c757d";
+                gestureStatus.style.backgroundColor = "white";
+                
+                // Reset camera border
+                videoView.classList.remove('border-green', 'border-yellow', 'border-red');
+                
+                // Reset camera feedback
+                cameraFeedback.classList.remove('hold', 'delay', 'recording');
+                cameraFeedback.querySelector('.feedback-icon').textContent = '👆';
+                cameraFeedback.querySelector('.feedback-text').textContent = 'Touch the green square with your finger tips';
             }
         }
     
@@ -777,6 +1208,9 @@
                         ctx.fillText(`H${index}`, x + 5, y - 5);
                     });
                 }
+                
+                // Handle gesture detection
+                handleGestureDetection(handResult);
             }
     
             if (webcamRunning) {
@@ -831,5 +1265,15 @@
             await originalEnableWebcam();
         };
     </script>
+    
+    <!-- User Presence Tracking -->
+    <?php if (isset($_SESSION['user_id'])): ?>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="js/user-presence.js"></script>
+    <script>
+        // Set the current user ID for the presence manager
+        window.currentUserId = <?php echo $_SESSION['user_id']; ?>;
+    </script>
+    <?php endif; ?>
 </body>
 </html>

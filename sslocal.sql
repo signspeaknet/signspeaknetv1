@@ -158,6 +158,20 @@ CREATE TABLE `user_progress` (
   `score` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_sessions`
+--
+
+CREATE TABLE `user_sessions` (
+  `user_id` int(11) NOT NULL,
+  `last_activity` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `session_data` json DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 --
 -- Dumping data for table `user_progress`
 --
@@ -223,6 +237,14 @@ ALTER TABLE `users`
 ALTER TABLE `user_progress`
   ADD PRIMARY KEY (`progress_id`),
   ADD KEY `user_id` (`user_id`);
+
+--
+-- Indexes for table `user_sessions`
+--
+ALTER TABLE `user_sessions`
+  ADD PRIMARY KEY (`user_id`),
+  ADD KEY `idx_last_activity` (`last_activity`),
+  ADD KEY `idx_recent_activity` (`last_activity` DESC);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -299,6 +321,67 @@ ALTER TABLE `advanced_quiz_results`
 --
 ALTER TABLE `user_progress`
   ADD CONSTRAINT `user_progress_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
+
+--
+-- Constraints for table `user_sessions`
+--
+ALTER TABLE `user_sessions`
+  ADD CONSTRAINT `fk_user_sessions_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
+
+-- --------------------------------------------------------
+
+--
+-- Views for user presence tracking
+--
+
+-- View for easy active user queries
+CREATE OR REPLACE VIEW `active_users_view` AS
+SELECT 
+    u.user_id,
+    u.username,
+    u.auth_provider,
+    us.last_activity,
+    us.session_data,
+    us.ip_address,
+    CASE 
+        WHEN us.last_activity >= DATE_SUB(NOW(), INTERVAL 5 MINUTE) THEN 'active'
+        WHEN us.last_activity >= DATE_SUB(NOW(), INTERVAL 1 HOUR) THEN 'recent'
+        ELSE 'inactive'
+    END as status
+FROM users u
+LEFT JOIN user_sessions us ON u.user_id = us.user_id
+WHERE us.last_activity IS NOT NULL
+ORDER BY us.last_activity DESC;
+
+-- --------------------------------------------------------
+
+--
+-- Stored procedures for user presence management
+--
+
+DELIMITER //
+CREATE PROCEDURE CleanupInactiveSessions()
+BEGIN
+    -- Remove sessions older than 24 hours
+    DELETE FROM user_sessions 
+    WHERE last_activity < DATE_SUB(NOW(), INTERVAL 24 HOUR);
+    
+    -- Return count of cleaned sessions
+    SELECT ROW_COUNT() as sessions_cleaned;
+END //
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Sample data for testing (optional)
+--
+
+-- Insert sample user session data for testing
+INSERT INTO `user_sessions` (`user_id`, `last_activity`, `session_data`, `ip_address`, `user_agent`) VALUES
+(1, NOW(), '{"page": "/", "action": "browsing", "timestamp": "2025-01-20T10:00:00"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'),
+(2, NOW(), '{"page": "/tutorial", "action": "learning", "timestamp": "2025-01-20T10:05:00"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

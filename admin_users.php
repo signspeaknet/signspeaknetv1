@@ -77,7 +77,7 @@ try {
 <!DOCTYPE html>
 <head>
     <meta charset="utf-8">
-    <title>Admin Users</title>
+    <title>SignSpeak</title>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <meta content="" name="keywords">
     <meta content="" name="description">
@@ -85,6 +85,7 @@ try {
 
     <!-- Favicon -->
     <link href="img/favicon.ico" rel="icon">
+    <link rel="shortcut icon" href="img/logo-ss.png" type="image/x-icon">
 
     <!-- Google Web Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

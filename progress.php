@@ -131,13 +131,14 @@ try {
 
 <head>
     <meta charset="utf-8">
-    <title>SignSpeak Index</title>
+    <title>SignSpeak</title>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <meta content="" name="keywords">
     <meta content="" name="description">
 
     <!-- Favicon -->
     <link href="img/favicon.ico" rel="icon">
+    <link rel="shortcut icon" href="img/logo-ss.png" type="image/x-icon">
 
     <!-- Google Web Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -179,7 +180,8 @@ try {
     <!-- Navbar Start -->
    <nav class="navbar navbar-expand-lg bg-white navbar-light shadow sticky-top p-0">
         <a href="index.php" class="navbar-brand d-flex align-items-center px-4 px-lg-5">
-            <h2 class="m-0 text-primary"><i class="fa-solid fa-hands-asl-interpreting"></i>SignSpeak</h2>
+            <img src="img/logo-ss.png?v=<?php echo time(); ?>" alt="SignSpeak" style="height:36px; width:auto; display:inline-block;" class="me-2" onerror="this.src='img/logo-ss.PNG';this.onerror=null;">
+            <h2 class="m-0 text-primary">SignSpeak</h2>
         </a>
         <button type="button" class="navbar-toggler me-4" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
             <span class="navbar-toggler-icon"></span>
@@ -188,8 +190,6 @@ try {
             <div class="navbar-nav ms-auto p-4 p-lg-0">
                 <a href="index.php" class="nav-item nav-link">Home</a>
                 <a href="tutorial.php" class="nav-item nav-link">Tutorial</a>
-                <a href="exercise.php" class="nav-item nav-link">Exercise</a>
-                <a href="advanced_quiz.php" class="nav-item nav-link">Advanced Quiz</a>        
                 <a href="about.php" class="nav-item nav-link">About Us</a>
                 <a href="progress.php" class="nav-item nav-link progress-btn">
                     <span class="user-initials me-2"><?php echo $userInitials; ?></span><span class="progress-text">Progress</span></a>     
@@ -569,7 +569,6 @@ try {
                     <h4 class="text-white mb-3">Quick Links</h4>
                     <a class="btn btn-link" href="about.php">About Us</a>
                     <a class="btn btn-link" href="tutorial.php">Tutorials</a>
-                    <a class="btn btn-link" href="exercise.php">Exercises</a>
                     <a class="btn btn-link" href="progress.php">Progress Tracking</a>
                     <a class="btn btn-link" href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Privacy Policy</a>
                     <a class="btn btn-link" href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms & Conditions</a>

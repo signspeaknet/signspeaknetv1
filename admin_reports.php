@@ -119,11 +119,11 @@ while ($row = $result->fetch_assoc()) {
 <!DOCTYPE html>
 <head>
     <meta charset="utf-8">
-    <title>Admin Reports</title>
+    <title>SignSpeak</title>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <meta content="" name="keywords">
     <meta content="" name="description">
-    <link rel="shortcut icon" href="" type="image/x-icon">
+    <link rel="shortcut icon" href="img/logo-ss.png" type="image/x-icon">
 
     <!-- Favicon -->
     <link href="img/favicon.ico" rel="icon">
