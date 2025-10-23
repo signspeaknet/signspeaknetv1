@@ -132,6 +132,7 @@
             height: 100%;
             object-fit: cover;
             display: none;
+            transform: scaleX(-1); /* Mirror visuals only */
         }
 
         video.active, canvas.active {
@@ -156,7 +157,8 @@
         .gesture-square {
             position: absolute;
             top: 20px;
-            left: 20px;
+            right: 20px;
+            left: auto;
             width: 80px;
             height: 80px;
             background-color: rgba(40, 167, 69, 0.3);
@@ -989,14 +991,16 @@
             // Get square bounds
             const squareBounds = getSquareBounds();
             
-            // Check if both finger tips are within the square
-            const indexInSquare = indexTip.x >= squareBounds.left && 
-                                indexTip.x <= squareBounds.right &&
+            // Mirror X for hit-testing to match mirrored visuals
+            const indexX = 1 - indexTip.x;
+            const middleX = 1 - middleTip.x;
+            const indexInSquare = indexX >= squareBounds.left && 
+                                indexX <= squareBounds.right &&
                                 indexTip.y >= squareBounds.top && 
                                 indexTip.y <= squareBounds.bottom;
                                 
-            const middleInSquare = middleTip.x >= squareBounds.left && 
-                                  middleTip.x <= squareBounds.right &&
+            const middleInSquare = middleX >= squareBounds.left && 
+                                  middleX <= squareBounds.right &&
                                   middleTip.y >= squareBounds.top && 
                                   middleTip.y <= squareBounds.bottom;
             

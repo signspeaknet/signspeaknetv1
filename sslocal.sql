@@ -11,6 +11,10 @@ SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
 
+-- Disable foreign key checks temporarily for easier import
+-- This allows tables to be created in any order without constraint violations
+SET FOREIGN_KEY_CHECKS = 0;
+
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -49,78 +53,30 @@ INSERT INTO `admin_users` (`admin_id`, `username`, `password`, `email`, `role`, 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `advanced_quizzes`
+-- Table structure for table `advanced_quizzes` (REMOVED)
 --
-
-CREATE TABLE `advanced_quizzes` (
-  `id` int(11) NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `description` text DEFAULT NULL,
-  `difficulty_level` enum('beginner','intermediate','advanced') DEFAULT 'beginner',
-  `time_limit` int(11) DEFAULT 0,
-  `passing_score` int(11) DEFAULT 70,
-  `num_questions` int(11) DEFAULT 10,
-  `is_active` tinyint(1) DEFAULT 1,
-  `created_by` int(11) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- REMOVED advanced_quizzes table definition
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `advanced_quiz_attempts`
+-- Table structure for table `advanced_quiz_attempts` (REMOVED)
 --
-
-CREATE TABLE `advanced_quiz_attempts` (
-  `id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `quiz_id` int(11) NOT NULL,
-  `score` int(11) DEFAULT 0,
-  `total_questions` int(11) DEFAULT 0,
-  `correct_answers` int(11) DEFAULT 0,
-  `time_taken` int(11) DEFAULT 0,
-  `passed` tinyint(1) DEFAULT 0,
-  `started_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `completed_at` timestamp NULL DEFAULT NULL,
-  `answers_data` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- REMOVED advanced_quiz_attempts table definition
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `advanced_quiz_questions`
+-- Table structure for table `advanced_quiz_questions` (REMOVED)
 --
-
-CREATE TABLE `advanced_quiz_questions` (
-  `id` int(11) NOT NULL,
-  `quiz_id` int(11) NOT NULL,
-  `question_bank_id` varchar(50) NOT NULL,
-  `question_text` text NOT NULL,
-  `question_type` enum('text','image','video') DEFAULT 'text',
-  `media_url` varchar(500) DEFAULT NULL,
-  `points` int(11) DEFAULT 1,
-  `order_index` int(11) DEFAULT 0,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- REMOVED advanced_quiz_questions table definition
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `advanced_quiz_results`
+-- Table structure for table `advanced_quiz_results` (REMOVED)
 --
-
-CREATE TABLE `advanced_quiz_results` (
-  `id` int(11) NOT NULL,
-  `attempt_id` int(11) NOT NULL,
-  `question_id` int(11) NOT NULL,
-  `user_answer` varchar(255) DEFAULT NULL,
-  `correct_answer` varchar(255) NOT NULL,
-  `is_correct` tinyint(1) DEFAULT 0,
-  `time_spent` int(11) DEFAULT 0,
-  `points_earned` int(11) DEFAULT 0,
-  `answered_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- REMOVED advanced_quiz_results table definition
 
 -- --------------------------------------------------------
 
@@ -129,10 +85,11 @@ CREATE TABLE `advanced_quiz_results` (
 --
 
 CREATE TABLE `users` (
-  `user_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL AUTO_INCREMENT,
   `username` varchar(50) NOT NULL,
   `password` varchar(255) NOT NULL,
-  `auth_provider` varchar(255) DEFAULT NULL
+  `auth_provider` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -146,16 +103,22 @@ INSERT INTO `users` (`user_id`, `username`, `password`, `auth_provider`) VALUES
 -- --------------------------------------------------------
 
 --
--- Table structure for table `user_progress`
+-- Table structure for table `quiz_scores`
 --
 
-CREATE TABLE `user_progress` (
-  `progress_id` int(11) NOT NULL,
+CREATE TABLE IF NOT EXISTS `quiz_scores` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
-  `exercise_number` int(11) DEFAULT NULL,
-  `quiz_number` int(11) DEFAULT NULL,
-  `completed_at` datetime DEFAULT NULL,
-  `score` int(11) DEFAULT NULL
+  `quiz_type` enum('basic_quiz','time_rush','math_quiz') NOT NULL,
+  `score` decimal(10,2) NOT NULL,
+  `total_questions` int(11) DEFAULT NULL,
+  `correct_answers` int(11) DEFAULT NULL,
+  `time_taken` int(11) DEFAULT NULL,
+  `completed_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_user_quiz` (`user_id`,`quiz_type`),
+  KEY `idx_completed` (`completed_at`),
+  CONSTRAINT `fk_quiz_scores_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -169,15 +132,13 @@ CREATE TABLE `user_sessions` (
   `last_activity` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `session_data` json DEFAULT NULL,
   `ip_address` varchar(45) DEFAULT NULL,
-  `user_agent` text DEFAULT NULL
+  `user_agent` text DEFAULT NULL,
+  PRIMARY KEY (`user_id`),
+  KEY `idx_last_activity` (`last_activity`),
+  KEY `idx_recent_activity` (`last_activity` DESC),
+  CONSTRAINT `fk_user_sessions_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `user_progress`
---
-
-INSERT INTO `user_progress` (`progress_id`, `user_id`, `exercise_number`, `quiz_number`, `completed_at`, `score`) VALUES
-(1, 2, 1, 1, '2025-07-16 20:32:58', 9);
 
 --
 -- Indexes for dumped tables
@@ -192,59 +153,70 @@ ALTER TABLE `admin_users`
   ADD UNIQUE KEY `email` (`email`);
 
 --
--- Indexes for table `advanced_quizzes`
+-- Indexes for table `advanced_quizzes` (REMOVED)
 --
-ALTER TABLE `advanced_quizzes`
-  ADD PRIMARY KEY (`id`);
+-- REMOVED index creation for advanced_quizzes
 
 --
--- Indexes for table `advanced_quiz_attempts`
+-- Indexes for table `advanced_quiz_attempts` (REMOVED)
 --
-ALTER TABLE `advanced_quiz_attempts`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`),
-  ADD KEY `quiz_id` (`quiz_id`),
-  ADD KEY `completed_at` (`completed_at`),
-  ADD KEY `idx_quiz_attempts_user_quiz` (`user_id`,`quiz_id`),
-  ADD KEY `idx_quiz_attempts_completed` (`completed_at`);
+-- REMOVED indexes for advanced_quiz_attempts
 
 --
--- Indexes for table `advanced_quiz_questions`
+-- Indexes for table `advanced_quiz_questions` (REMOVED)
 --
-ALTER TABLE `advanced_quiz_questions`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `quiz_id` (`quiz_id`),
-  ADD KEY `question_bank_id` (`question_bank_id`);
+-- REMOVED indexes for advanced_quiz_questions
 
 --
--- Indexes for table `advanced_quiz_results`
+-- Indexes for table `advanced_quiz_results` (REMOVED)
 --
-ALTER TABLE `advanced_quiz_results`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `attempt_id` (`attempt_id`),
-  ADD KEY `question_id` (`question_id`),
-  ADD KEY `idx_quiz_results_attempt` (`attempt_id`);
+-- REMOVED indexes for advanced_quiz_results
 
 --
--- Indexes for table `users`
+-- Indexes for table `quiz_scores` (defined in table creation)
 --
-ALTER TABLE `users`
-  ADD PRIMARY KEY (`user_id`);
 
 --
--- Indexes for table `user_progress`
+-- Indexes for table `users` (defined in table creation)
 --
-ALTER TABLE `user_progress`
-  ADD PRIMARY KEY (`progress_id`),
-  ADD KEY `user_id` (`user_id`);
+
 
 --
--- Indexes for table `user_sessions`
+-- Indexes for table `user_sessions` (defined in table creation)
 --
-ALTER TABLE `user_sessions`
-  ADD PRIMARY KEY (`user_id`),
-  ADD KEY `idx_last_activity` (`last_activity`),
-  ADD KEY `idx_recent_activity` (`last_activity` DESC);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_presence_minutely`
+-- Stores a single presence record per user per minute for trend charts
+--
+
+CREATE TABLE `user_presence_minutely` (
+  `bucket_minute` datetime NOT NULL,
+  `user_id` int(11) NOT NULL,
+  PRIMARY KEY (`bucket_minute`,`user_id`),
+  KEY `idx_bucket_minute` (`bucket_minute`),
+  KEY `idx_user_id` (`user_id`),
+  CONSTRAINT `fk_presence_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Triggers to populate minutely presence from user_sessions updates
+DELIMITER //
+CREATE TRIGGER `trg_user_sessions_minutely_ins` AFTER INSERT ON `user_sessions`
+FOR EACH ROW
+BEGIN
+  INSERT IGNORE INTO user_presence_minutely (bucket_minute, user_id)
+  VALUES (DATE_FORMAT(NEW.last_activity, '%Y-%m-%d %H:%i:00'), NEW.user_id);
+END //
+
+CREATE TRIGGER `trg_user_sessions_minutely_upd` AFTER UPDATE ON `user_sessions`
+FOR EACH ROW
+BEGIN
+  INSERT IGNORE INTO user_presence_minutely (bucket_minute, user_id)
+  VALUES (DATE_FORMAT(NEW.last_activity, '%Y-%m-%d %H:%i:00'), NEW.user_id);
+END //
+DELIMITER ;
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -257,76 +229,66 @@ ALTER TABLE `admin_users`
   MODIFY `admin_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
--- AUTO_INCREMENT for table `advanced_quizzes`
+-- AUTO_INCREMENT for table `quiz_scores` (defined in table creation)
 --
-ALTER TABLE `advanced_quizzes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
--- AUTO_INCREMENT for table `advanced_quiz_attempts`
+-- AUTO_INCREMENT for table `advanced_quizzes` (REMOVED)
 --
-ALTER TABLE `advanced_quiz_attempts`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+-- REMOVED auto_increment for advanced_quizzes
 
 --
--- AUTO_INCREMENT for table `advanced_quiz_questions`
+-- AUTO_INCREMENT for table `advanced_quiz_attempts` (REMOVED)
 --
-ALTER TABLE `advanced_quiz_questions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=75;
+-- REMOVED auto_increment for advanced_quiz_attempts
 
 --
--- AUTO_INCREMENT for table `advanced_quiz_results`
+-- AUTO_INCREMENT for table `advanced_quiz_questions` (REMOVED)
 --
-ALTER TABLE `advanced_quiz_results`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+-- REMOVED auto_increment for advanced_quiz_questions
 
 --
--- AUTO_INCREMENT for table `users`
+-- AUTO_INCREMENT for table `advanced_quiz_results` (REMOVED)
 --
-ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+-- REMOVED auto_increment for advanced_quiz_results
 
 --
--- AUTO_INCREMENT for table `user_progress`
+-- AUTO_INCREMENT for table `users` (defined in table creation)
 --
-ALTER TABLE `user_progress`
-  MODIFY `progress_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
+
 
 --
 -- Constraints for dumped tables
 --
 
 --
--- Constraints for table `advanced_quiz_attempts`
+-- Constraints for table `advanced_quiz_attempts` (REMOVED)
 --
-ALTER TABLE `advanced_quiz_attempts`
-  ADD CONSTRAINT `advanced_quiz_attempts_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `advanced_quiz_attempts_ibfk_2` FOREIGN KEY (`quiz_id`) REFERENCES `advanced_quizzes` (`id`) ON DELETE CASCADE;
+-- REMOVED foreign keys for advanced_quiz_attempts
 
 --
--- Constraints for table `advanced_quiz_questions`
+-- Constraints for table `advanced_quiz_questions` (REMOVED)
 --
-ALTER TABLE `advanced_quiz_questions`
-  ADD CONSTRAINT `advanced_quiz_questions_ibfk_1` FOREIGN KEY (`quiz_id`) REFERENCES `advanced_quizzes` (`id`) ON DELETE CASCADE;
+-- REMOVED foreign keys for advanced_quiz_questions
 
 --
--- Constraints for table `advanced_quiz_results`
+-- Constraints for table `advanced_quiz_results` (REMOVED)
 --
-ALTER TABLE `advanced_quiz_results`
-  ADD CONSTRAINT `advanced_quiz_results_ibfk_1` FOREIGN KEY (`attempt_id`) REFERENCES `advanced_quiz_attempts` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `advanced_quiz_results_ibfk_2` FOREIGN KEY (`question_id`) REFERENCES `advanced_quiz_questions` (`id`) ON DELETE CASCADE;
+-- REMOVED foreign keys for advanced_quiz_results
+
 
 --
--- Constraints for table `user_progress`
+-- Constraints for table `quiz_scores` (defined in table creation)
 --
-ALTER TABLE `user_progress`
-  ADD CONSTRAINT `user_progress_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`);
 
 --
--- Constraints for table `user_sessions`
+-- Constraints for table `user_sessions` (defined in table creation)
 --
-ALTER TABLE `user_sessions`
-  ADD CONSTRAINT `fk_user_sessions_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `admin_users` (independent admin table)
+--
+-- Note: admin_users is independent and not linked to users table
 
 -- --------------------------------------------------------
 
@@ -377,10 +339,35 @@ DELIMITER ;
 -- Sample data for testing (optional)
 --
 
--- Insert sample user session data for testing
-INSERT INTO `user_sessions` (`user_id`, `last_activity`, `session_data`, `ip_address`, `user_agent`) VALUES
-(1, NOW(), '{"page": "/", "action": "browsing", "timestamp": "2025-01-20T10:00:00"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'),
-(2, NOW(), '{"page": "/tutorial", "action": "learning", "timestamp": "2025-01-20T10:05:00"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+-- Insert sample user session data for testing (after users table is created)
+-- INSERT INTO `user_sessions` (`user_id`, `last_activity`, `session_data`, `ip_address`, `user_agent`) VALUES
+-- (1, NOW(), '{"page": "/", "action": "browsing", "timestamp": "2025-01-20T10:00:00"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'),
+-- (2, NOW(), '{"page": "/tutorial", "action": "learning", "timestamp": "2025-01-20T10:05:00"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+
+-- Insert sample quiz scores data for testing (optional - remove in production)
+-- INSERT INTO `quiz_scores` (`user_id`, `quiz_type`, `score`, `total_questions`, `correct_answers`, `completed_at`) VALUES
+-- (1, 'basic_quiz', 85.00, 10, 8, NOW()),
+-- (1, 'time_rush', 15.00, NULL, 15, NOW()),
+-- (1, 'math_quiz', 90.00, 10, 9, NOW());
+
+-- --------------------------------------------------------
+--
+-- View: v_user_activity_stats
+-- Aggregates user activity data for efficient querying
+--
+
+CREATE VIEW v_user_activity_stats AS
+SELECT 
+    u.user_id,
+    u.username,
+    COUNT(upm.user_id) as total_minutes,
+    MAX(upm.bucket_minute) as last_activity
+FROM users u
+LEFT JOIN user_presence_minutely upm ON u.user_id = upm.user_id
+GROUP BY u.user_id, u.username;
+
+-- Re-enable foreign key checks
+SET FOREIGN_KEY_CHECKS = 1;
 
 COMMIT;
 

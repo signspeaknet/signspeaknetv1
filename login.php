@@ -91,6 +91,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <div class="navbar-nav ms-auto p-4 p-lg-0">
                 <a href="index.php" class="nav-item nav-link active">Home</a>
                 <a href="tutorial.php" class="nav-item nav-link">Tutorial</a>
+                <a href="#" class="nav-item nav-link">Exercises</a>
                 <a href="about.php" class="nav-item nav-link">About Us</a>
                 <a href="progress.php" class="nav-item nav-link progress-btn">
                     <i class="fa-solid fa-user fa-lg me-2"></i><span class="progress-text">Progress</span></a>     

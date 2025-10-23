@@ -67,6 +67,96 @@ $avg_score_by_difficulty = [
 
 // Top active quizzes (set to empty since quiz tables are removed)
 $top_active_quizzes = [];
+
+// Active users trend data
+$active_trend_labels = [];
+$active_trend_values = [];
+$active_trend_labels_day = [];
+$active_trend_values_day = [];
+
+try {
+    // Last 30 minutes, per minute
+    $stmt = $conn->prepare(
+        "SELECT bucket_minute, COUNT(DISTINCT user_id) AS users
+        FROM user_presence_minutely
+        WHERE bucket_minute >= DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+        GROUP BY bucket_minute
+        ORDER BY bucket_minute ASC"
+    );
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $active_trend_labels[] = date('H:i', strtotime($row['bucket_minute']));
+        $active_trend_values[] = (int)$row['users'];
+    }
+
+    // Last 24 hours, per hour
+    $stmt2 = $conn->prepare(
+        "SELECT DATE_FORMAT(bucket_minute, '%Y-%m-%d %H:00:00') AS hour_bucket, COUNT(DISTINCT user_id) AS users
+        FROM user_presence_minutely
+        WHERE bucket_minute >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+        GROUP BY hour_bucket
+        ORDER BY hour_bucket ASC"
+    );
+    $stmt2->execute();
+    $result2 = $stmt2->get_result();
+    while ($row2 = $result2->fetch_assoc()) {
+        $active_trend_labels_day[] = date('H:00', strtotime($row2['hour_bucket']));
+        $active_trend_values_day[] = (int)$row2['users'];
+    }
+} catch (Exception $e) {
+    $active_trend_labels = [];
+    $active_trend_values = [];
+    $active_trend_labels_day = [];
+    $active_trend_values_day = [];
+}
+
+// Most Active Accounts data
+$most_active_daily = [];
+$most_active_30days = [];
+
+try {
+    // Get top 10 most active users from last 24 hours
+    $stmt = $conn->prepare(
+        "SELECT u.user_id, u.username, COUNT(upm.user_id) as total_minutes
+        FROM users u
+        LEFT JOIN user_presence_minutely upm ON u.user_id = upm.user_id
+        WHERE upm.bucket_minute >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+        GROUP BY u.user_id, u.username
+        ORDER BY total_minutes DESC
+        LIMIT 10"
+    );
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $most_active_daily[] = [
+            'username' => $row['username'],
+            'minutes' => (int)$row['total_minutes']
+        ];
+    }
+
+    // Get top 10 most active users from last 30 days
+    $stmt2 = $conn->prepare(
+        "SELECT u.user_id, u.username, COUNT(upm.user_id) as total_minutes
+        FROM users u
+        LEFT JOIN user_presence_minutely upm ON u.user_id = upm.user_id
+        WHERE upm.bucket_minute >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+        GROUP BY u.user_id, u.username
+        ORDER BY total_minutes DESC
+        LIMIT 10"
+    );
+    $stmt2->execute();
+    $result2 = $stmt2->get_result();
+    while ($row2 = $result2->fetch_assoc()) {
+        $most_active_30days[] = [
+            'username' => $row2['username'],
+            'minutes' => (int)$row2['total_minutes']
+        ];
+    }
+} catch (Exception $e) {
+    $most_active_daily = [];
+    $most_active_30days = [];
+}
 ?>
 
 <!DOCTYPE html>
@@ -200,15 +290,18 @@ $top_active_quizzes = [];
                     <div class="col-md-3 mb-3">
                         <div class="card bg-warning text-white">
                             <div class="card-body">
-                                <h5 class="card-title">User Engagement</h5>
-                                <h2><?php echo $stats['total_users']; ?></h2>
-                                <p class="card-text">Total registered</p>
+                                <h5 class="card-title">Prediction Server</h5>
+                                <button id="wakeServerBtn" class="btn btn-light mt-2 w-100">
+                                    <i class="fas fa-power-off me-2"></i>Wake Server
+                                </button>
+                                <p class="card-text mt-2 mb-0" id="serverStatus">Not tested</p>
+                                <small id="serverLatency" class="d-block mt-1"></small>
                             </div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Charts Row 1 -->
+                <!-- Charts Row -->
                 <div class="row mb-3">
                     <div class="col-lg-6 mb-3">
                         <div class="chart-container">
@@ -222,65 +315,22 @@ $top_active_quizzes = [];
                                 </div>
                             </div>
                             <canvas id="chartActiveUsers" height="80"></canvas>
-                            <div class="chart-notes">No data available; toggle minute/day.</div>
-                        </div>
-                    </div>
-                    <div class="col-lg-6 mb-3">
-                        <div class="chart-container">
-                            <div class="chart-title"><i class="fas fa-user-clock"></i> Most Active Accounts per Day</div>
-                            <canvas id="chartMostActive" height="80"></canvas>
-                            <div class="chart-notes">No data available.</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Charts Row 2 -->
-                <div class="row mb-3">
-                    <div class="col-lg-6 mb-3">
-                        <div class="chart-container">
-                            <div class="chart-title"><i class="fas fa-bullseye"></i> Most Accurately Predicted Word</div>
-                            <canvas id="chartAccuracy" height="80"></canvas>
-                            <div class="chart-notes">No data available.</div>
+                            <div class="chart-notes">Active users over time from user_presence_minutely table.</div>
                         </div>
                     </div>
                     <div class="col-lg-6 mb-3">
                         <div class="chart-container">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div class="chart-title"><i class="fas fa-flag-checkered"></i> User Activity</div>
+                                <div class="chart-title"><i class="fas fa-crown"></i> Most Active Accounts</div>
                                 <div>
-                                    <select id="finishedMode" class="form-select form-select-sm" style="width:auto; display:inline-block;">
-                                        <option value="week">Per week</option>
-                                        <option value="month">Per month</option>
-                                        <option value="year">Per year</option>
+                                    <select id="mostActiveMode" class="form-select form-select-sm" style="width:auto; display:inline-block;">
+                                        <option value="daily">Daily</option>
+                                        <option value="30days">Last 30 Days</option>
                                     </select>
-                        </div>
-                    </div>
-                            <canvas id="chartFinished" height="80"></canvas>
-                            <div class="chart-notes">No data available; toggle granularity.</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Charts Row 3 -->
-                <div class="row mb-3">
-                    <div class="col-lg-6 mb-3">
-                        <div class="chart-container">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div class="chart-title"><i class="fas fa-user-search"></i> User Progress</div>
-                                <div class="input-group input-group-sm" style="width: 260px;">
-                                    <input id="userSearch" type="text" class="form-control" placeholder="Search username...">
-                                    <button id="userSearchBtn" class="btn btn-primary">Go</button>
                                 </div>
                             </div>
-                            <canvas id="chartUserProgress" height="80"></canvas>
-                            <div class="chart-notes">No data available; search for user progress.</div>
-                        </div>
-                    </div>
-                    <div class="col-lg-6 mb-3">
-                        <div class="chart-container">
-                            <div class="chart-title"><i class="fas fa-users"></i> Signed-in vs Guest Users</div>
-                            <canvas id="chartSigninVsGuest" height="80"></canvas>
-                            <div class="chart-notes">No data available; Blue = signed-in, Red = guests.</div>
+                            <canvas id="chartMostActive" height="80"></canvas>
+                            <div class="chart-notes">Top 10 most active users based on presence minutes.</div>
                         </div>
                     </div>
                 </div>
@@ -324,97 +374,166 @@ $top_active_quizzes = [];
         function movingAvg(arr, windowSize=3) {
             const out=[]; for (let i=0;i<arr.length;i++){ const start=Math.max(0,i-windowSize+1); const slice=arr.slice(start,i+1); out.push(Math.round(slice.reduce((a,b)=>a+b,0)/slice.length)); } return out;
         }
-        function sortDescByValue(labels, values){
-            const pairs = labels.map((l,i)=>({l, v: values[i]}));
-            pairs.sort((a,b)=> b.v - a.v);
-            return { labels: pairs.map(p=>p.l), values: pairs.map(p=>p.v) };
-        }
 
         // Responsive canvas heights for mobile
         function setCanvasHeights() {
             const small = window.innerWidth < 576;
             const h = small ? 80 : 100;
-            const ids = ['chartActiveUsers','chartMostActive','chartAccuracy','chartFinished','chartUserProgress','chartSigninVsGuest'];
+            const ids = ['chartActiveUsers', 'chartMostActive'];
             ids.forEach(id=>{ const el = document.getElementById(id); if (el) el.height = h; });
         }
         setCanvasHeights();
 
         // 1) Active Users Trend (minute/day toggle)
         const activeCtx = document.getElementById('chartActiveUsers').getContext('2d');
-        const minuteLabels = Array.from({length: 60}, (_,i)=> `${i}m`);
-        const minuteValues = [];
-        const dayLabels = Array.from({length: 24}, (_,i)=> `${i}:00`);
-        const dayValues = [];
+        const minuteLabels = <?php echo json_encode($active_trend_labels); ?>;
+        const minuteValues = <?php echo json_encode($active_trend_values); ?>;
+        const dayLabels = <?php echo json_encode($active_trend_labels_day); ?>;
+        const dayValues = <?php echo json_encode($active_trend_values_day); ?>;
+        let activeMode = 'minute';
         let activeUsersChart = new Chart(activeCtx, {
             type: 'line',
             data: { labels: minuteLabels, datasets: [{ label: 'Active Users', data: minuteValues, borderColor: '#0d6efd', backgroundColor: 'rgba(13,110,253,0.15)', fill: true, tension: 0.35 }] },
-            options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{ y:{ beginAtZero:true } } }
+            options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
         });
+
+        function formatMinuteLabel(date){
+            const d = date instanceof Date ? date : new Date(date);
+            const hh = String(d.getHours()).padStart(2,'0');
+            const mm = String(d.getMinutes()).padStart(2,'0');
+            return `${hh}:${mm}`;
+        }
+
+        function formatHourLabel(date){
+            const d = date instanceof Date ? date : new Date(date);
+            const hh = String(d.getHours()).padStart(2,'0');
+            return `${hh}:00`;
+        }
+
+        function adjustYAxis(){
+            const arr = activeMode==='minute' ? minuteValues : dayValues;
+            const maxVal = Math.max(1, ...arr);
+            activeUsersChart.options.scales.y.suggestedMax = Math.max(5, maxVal + 1);
+        }
+
+        function upsertPoint(labelsArr, valuesArr, label, value, maxPoints){
+            const lastIdx = labelsArr.length - 1;
+            if (lastIdx >= 0 && labelsArr[lastIdx] === label){
+                valuesArr[lastIdx] = value;
+            } else {
+                labelsArr.push(label);
+                valuesArr.push(value);
+                if (labelsArr.length > maxPoints){
+                    labelsArr.shift();
+                    valuesArr.shift();
+                }
+            }
+        }
+        // Active Users Trend now uses server-side data from user_presence_minutely table
+
+
         document.getElementById('activeUsersMode').addEventListener('change', (e)=>{
             const mode = e.target.value;
-            activeUsersChart.data.labels = mode==='minute'? minuteLabels : dayLabels;
-            activeUsersChart.data.datasets[0].data = mode==='minute'? minuteValues : dayValues;
+            activeMode = mode;
+            if (mode === 'minute') {
+                activeUsersChart.data.labels = minuteLabels;
+                activeUsersChart.data.datasets[0].data = minuteValues;
+            } else {
+                activeUsersChart.data.labels = dayLabels;
+                activeUsersChart.data.datasets[0].data = dayValues;
+            }
             activeUsersChart.update();
         });
         window.addEventListener('resize', ()=>{ setCanvasHeights(); activeUsersChart.resize(); });
 
-        // 2) Most Active Accounts per Day (time spent)
+        // 2) Most Active Accounts Chart
         const mostActiveCtx = document.getElementById('chartMostActive').getContext('2d');
-        const users = [];
-        const minutesSpent = [];
-        const sortedActive = sortDescByValue(users, minutesSpent);
-        const mostActiveChart = new Chart(mostActiveCtx, { type:'bar', data:{ labels: sortedActive.labels, datasets:[{ label:'Minutes', data: sortedActive.values, backgroundColor:'#06BBCC', borderColor:'#049aa8', borderWidth:1 }] }, options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{ x:{ beginAtZero:true } } } });
+        const dailyData = <?php echo json_encode($most_active_daily); ?>;
+        const thirtyDaysData = <?php echo json_encode($most_active_30days); ?>;
+        
+        // Prepare data for chart
+        function prepareChartData(data) {
+            const labels = [];
+            const values = [];
+            const colors = [];
+            
+            data.forEach((user, index) => {
+                // Add crown emoji for first place
+                const displayName = index === 0 ? `👑 ${user.username}` : user.username;
+                labels.push(displayName);
+                values.push(user.minutes);
+                
+                // Gold color for first place, standard color for others
+                colors.push(index === 0 ? '#FFD700' : '#06BBCC');
+            });
+            
+            return { labels, values, colors };
+        }
+        
+        const dailyChartData = prepareChartData(dailyData);
+        let mostActiveMode = 'daily';
+        
+        let mostActiveChart = new Chart(mostActiveCtx, {
+            type: 'bar',
+            data: {
+                labels: dailyChartData.labels,
+                datasets: [{
+                    label: 'Minutes Active',
+                    data: dailyChartData.values,
+                    backgroundColor: dailyChartData.colors,
+                    borderColor: dailyChartData.colors.map(color => color === '#FFD700' ? '#FFA500' : '#049aa8'),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.x + ' minutes';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { 
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Minutes Active'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Toggle between daily and 30-day data
+        document.getElementById('mostActiveMode').addEventListener('change', (e) => {
+            const mode = e.target.value;
+            mostActiveMode = mode;
+            
+            const chartData = mode === 'daily' ? dailyData : thirtyDaysData;
+            const preparedData = prepareChartData(chartData);
+            
+            mostActiveChart.data.labels = preparedData.labels;
+            mostActiveChart.data.datasets[0].data = preparedData.values;
+            mostActiveChart.data.datasets[0].backgroundColor = preparedData.colors;
+            mostActiveChart.data.datasets[0].borderColor = preparedData.colors.map(color => 
+                color === '#FFD700' ? '#FFA500' : '#049aa8'
+            );
+            
+            mostActiveChart.update();
+        });
+        
         window.addEventListener('resize', ()=> mostActiveChart.resize());
 
-        // 3) Most Accurately Predicted Word
-        const accuracyCtx = document.getElementById('chartAccuracy').getContext('2d');
-        const words = [];
-        const acc = [];
-        const sortedAcc = sortDescByValue(words, acc);
-        const accuracyChart = new Chart(accuracyCtx, { type:'bar', data:{ labels: sortedAcc.labels, datasets:[{ label:'Avg Accuracy %', data: sortedAcc.values, backgroundColor:'#20c997', borderColor:'#0ea97d', borderWidth:1 }] }, options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(ctx)=> ctx.parsed.x + '%'} } }, scales:{ x:{ beginAtZero:true, max:100 } } } });
-        window.addEventListener('resize', ()=> accuracyChart.resize());
+        // Periodic refresh disabled to keep Active Users Trend empty
 
-        // 4) User Activity (week/month/year toggle)
-        const finishedCtx = document.getElementById('chartFinished').getContext('2d');
-        const weekLabels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-        const weekVals = [];
-        const monthLabels = Array.from({length:12}, (_,i)=> new Date(0,i).toLocaleString('en',{month:'short'}));
-        const monthVals = [];
-        const yearLabels = Array.from({length:5}, (_,i)=> `${new Date().getFullYear()-4+i}`);
-        const yearVals = [];
-        let finishedChart = new Chart(finishedCtx, { type:'line', data:{ labels: weekLabels, datasets:[{ label:'Activity', data: weekVals, borderColor:'#06BBCC', backgroundColor:'rgba(6,187,204,0.15)', fill:true, tension:0.35 }] }, options:{ responsive:true, maintainAspectRatio:false } });
-        document.getElementById('finishedMode').addEventListener('change', (e)=>{
-            const mode = e.target.value;
-            if (mode==='week'){ finishedChart.data.labels = weekLabels; finishedChart.data.datasets[0].data = weekVals; }
-            if (mode==='month'){ finishedChart.data.labels = monthLabels; finishedChart.data.datasets[0].data = monthVals; }
-            if (mode==='year'){ finishedChart.data.labels = yearLabels; finishedChart.data.datasets[0].data = yearVals; }
-            finishedChart.update();
-        });
-        window.addEventListener('resize', ()=> finishedChart.resize());
 
-        // 5) User Progress (search)
-        const userProgressCtx = document.getElementById('chartUserProgress').getContext('2d');
-        const baseDates = Array.from({length: 10}, (_,i)=> `Day ${i+1}`);
-        const userProgressChart = new Chart(userProgressCtx, { type:'line', data:{ labels: baseDates, datasets:[{ label:'Accomplished Words', data: [], borderColor:'#6610f2', backgroundColor:'rgba(102,16,242,0.15)', fill:true, tension:0.35 }] }, options:{ responsive:true, maintainAspectRatio:false } });
-        function loadUserFake(username){
-            const vals = [];
-            userProgressChart.data.datasets[0].data = vals;
-            userProgressChart.data.datasets[0].label = `Accomplished Words — ${username}`;
-            userProgressChart.update();
-        }
-        document.getElementById('userSearchBtn').addEventListener('click', ()=>{
-            const name = (document.getElementById('userSearch').value || 'guest').trim();
-            loadUserFake(name);
-        });
-        window.addEventListener('resize', ()=> userProgressChart.resize());
-
-        // 6) Signed-in vs Guest Trend
-        const sgCtx = document.getElementById('chartSigninVsGuest').getContext('2d');
-        const sgLabels = Array.from({length:12}, (_,i)=> new Date(0,i).toLocaleString('en',{month:'short'}));
-        const signedIn = [];
-        const guests = [];
-        const sgChart = new Chart(sgCtx, { type:'line', data:{ labels: sgLabels, datasets:[ { label:'Signed-in', data: signedIn, borderColor:'#0d6efd', backgroundColor:'rgba(13,110,253,0.15)', fill:true, tension:0.35 }, { label:'Guests', data: guests, borderColor:'#dc3545', backgroundColor:'rgba(220,53,69,0.12)', fill:true, tension:0.35 } ] }, options:{ responsive:true, maintainAspectRatio:false } });
-        window.addEventListener('resize', ()=> sgChart.resize());
         
         // Real-time Active Users with WebSocket
         let socket = null;
@@ -434,6 +553,7 @@ $top_active_quizzes = [];
                 if (data.count !== undefined) {
                     document.getElementById('active-users-count').textContent = data.count;
                 }
+                // Chart series updates disabled to keep Active Users Trend empty
             });
             
             socket.on('disconnect', () => {
@@ -471,6 +591,74 @@ $top_active_quizzes = [];
                 updateActiveUsers();
             }
         }, 30000);
+
+        // Expose handler for presence manager (if ever used here)
+        window.updateAdminDashboard = function(count, users) {
+            var el = document.getElementById('active-users-count');
+            if (el && typeof count !== 'undefined') {
+                el.textContent = count;
+            }
+        };
+
+        // Server Wake Button Handler
+        document.getElementById('wakeServerBtn').addEventListener('click', async function() {
+            const btn = this;
+            const statusEl = document.getElementById('serverStatus');
+            const latencyEl = document.getElementById('serverLatency');
+            
+            // Disable button and show loading
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Waking server...';
+            statusEl.textContent = 'Pinging server...';
+            latencyEl.textContent = '';
+            
+            // Sample data from CSV converted to JSON format (matching translate.php format)
+            const sampleData = {
+                data: [
+                    [0.55737,0.54715,0.58292,0.47945,0.52278,0.48788,0.59533,0.60195,0.52366,0.61138,0.80953,0.87023,0.3319,0.89556,0.92112,1.35022,0.02687,1.23348,0.88492,1.62944,0.1744,0.71791,0.15786,0.90926,0.22803,0.83061,0.27138,0.74128,0.30382,0.67806,0.31618,0.60942,0.21986,0.64215,0.2467,0.56205,0.28351,0.55653,0.31033,0.56985,0.19947,0.6327,0.23166,0.53513,0.27543,0.53712,0.30627,0.57069,0.17748,0.63059,0.20929,0.52568,0.25931,0.52644,0.29697,0.56089,0.15879,0.63889,0.1836,0.54361,0.22821,0.52468,0.27077,0.54266,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+                ]
+            };
+            
+            const startTime = performance.now();
+            
+            try {
+                const response = await fetch('https://flask-tester-cx5v.onrender.com/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(sampleData)
+                });
+                
+                const endTime = performance.now();
+                const latency = Math.round(endTime - startTime);
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    statusEl.textContent = 'Server is awake!';
+                    latencyEl.textContent = `Latency: ${latency}ms`;
+                    latencyEl.className = 'd-block mt-1 text-light';
+                    btn.innerHTML = '<i class="fas fa-check me-2"></i>Server Active';
+                    btn.classList.remove('btn-light');
+                    btn.classList.add('btn-success');
+                    
+                    console.log('Server response:', result);
+                    console.log(`Server responded in ${latency}ms`);
+                } else {
+                    throw new Error(`Server responded with status ${response.status}`);
+                }
+            } catch (error) {
+                const endTime = performance.now();
+                const latency = Math.round(endTime - startTime);
+                
+                console.error('Error waking server:', error);
+                statusEl.textContent = 'Error: ' + error.message;
+                latencyEl.textContent = `Failed after ${latency}ms`;
+                latencyEl.className = 'd-block mt-1';
+                btn.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Retry';
+                btn.disabled = false;
+            }
+        });
     </script>
 </body>
 </html> 

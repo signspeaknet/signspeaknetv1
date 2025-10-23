@@ -32,19 +32,23 @@ $completedExercises = [
 ];
 
 // Fetch completed quizzes
-$sql = "SELECT exercise_number, quiz_number, completed_at FROM user_progress WHERE user_id = ?";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
-while ($row = $result->fetch_assoc()) {
-    $part = 'part' . $row['exercise_number'];
-    $quiz_index = $row['quiz_number'] - 1; // assuming quiz_number is 1-based
-    if (isset($completedExercises[$part][$quiz_names[$quiz_index]])) {
-        $completedExercises[$part][$quiz_names[$quiz_index]] = true;
+try {
+    $sql = "SELECT exercise_number, quiz_number, completed_at FROM user_progress WHERE user_id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $part = 'part' . $row['exercise_number'];
+        $quiz_index = $row['quiz_number'] - 1; // assuming quiz_number is 1-based
+        if (isset($completedExercises[$part][$quiz_names[$quiz_index]])) {
+            $completedExercises[$part][$quiz_names[$quiz_index]] = true;
+        }
     }
+    $stmt->close();
+} catch (Exception $e) {
+    // Table doesn't exist, keep default values (all false)
 }
-$stmt->close();
 
 // Fetch user info (replace with your actual user table/fields)
 $userInfo = [
@@ -65,39 +69,47 @@ $stmt->close();
 
 // Fetch monthly progress (example: count completions per month)
 $monthlyProgress = [];
-$sql = "SELECT DATE_FORMAT(completed_at, '%b') as month, COUNT(*) as completion
-        FROM user_progress
-        WHERE user_id = ?
-        GROUP BY month
-        ORDER BY MIN(completed_at)";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
-while ($row = $result->fetch_assoc()) {
-    $monthlyProgress[] = [
-        'month' => $row['month'],
-        'completion' => intval($row['completion']) * 100 / 21 // 21 = 3 parts * 7 quizzes
-    ];
+try {
+    $sql = "SELECT DATE_FORMAT(completed_at, '%b') as month, COUNT(*) as completion
+            FROM user_progress
+            WHERE user_id = ?
+            GROUP BY month
+            ORDER BY MIN(completed_at)";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $monthlyProgress[] = [
+            'month' => $row['month'],
+            'completion' => intval($row['completion']) * 100 / 21 // 21 = 3 parts * 7 quizzes
+        ];
+    }
+    $stmt->close();
+} catch (Exception $e) {
+    // Table doesn't exist, keep empty array
 }
-$stmt->close();
 
 // Fetch quiz history for modal
 $quizHistory = [];
-$sql = "SELECT completed_at, exercise_number, quiz_number, score FROM user_progress WHERE user_id = ? ORDER BY completed_at DESC LIMIT 10";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
-while ($row = $result->fetch_assoc()) {
-    $quizHistory[] = [
-        'date' => $row['completed_at'],
-        'exercise' => 'Part ' . $row['exercise_number'] . ' - ' . ucfirst($quiz_names[$row['quiz_number']-1]),
-        'score' => $row['score'] . '%',
-        'time_spent' => '' // Add if you have this field
-    ];
+try {
+    $sql = "SELECT completed_at, exercise_number, quiz_number, score FROM user_progress WHERE user_id = ? ORDER BY completed_at DESC LIMIT 10";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $quizHistory[] = [
+            'date' => $row['completed_at'],
+            'exercise' => 'Part ' . $row['exercise_number'] . ' - ' . ucfirst($quiz_names[$row['quiz_number']-1]),
+            'score' => $row['score'] . '%',
+            'time_spent' => '' // Add if you have this field
+        ];
+    }
+    $stmt->close();
+} catch (Exception $e) {
+    // Table doesn't exist, keep empty array
 }
-$stmt->close();
 
 // Fetch advanced quiz attempts and merge into history
 try {
@@ -122,6 +134,38 @@ try {
     $stmt->close();
 } catch (Exception $e) {
     // Ignore if advanced tables/columns are missing
+}
+
+// Fetch best scores for each quiz type
+$quizScores = [
+    'basic_quiz' => ['best_score' => 0, 'last_played' => null, 'total_attempts' => 0],
+    'time_rush' => ['best_score' => 0, 'last_played' => null, 'total_attempts' => 0],
+    'math_quiz' => ['best_score' => 0, 'last_played' => null, 'total_attempts' => 0]
+];
+
+try {
+    foreach(['basic_quiz', 'time_rush', 'math_quiz'] as $type) {
+        $sql = "SELECT 
+            MAX(score) as best_score,
+            MAX(completed_at) as last_played,
+            COUNT(*) as total_attempts
+            FROM quiz_scores 
+            WHERE user_id = ? AND quiz_type = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("is", $user_id, $type);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($row = $result->fetch_assoc()) {
+            $quizScores[$type] = [
+                'best_score' => $row['best_score'] ? floatval($row['best_score']) : 0,
+                'last_played' => $row['last_played'],
+                'total_attempts' => intval($row['total_attempts'])
+            ];
+        }
+        $stmt->close();
+    }
+} catch (Exception $e) {
+    // Table doesn't exist, keep default values
 }
 
 // Pass to JS
@@ -157,8 +201,6 @@ try {
     <link href="lib/animate/animate.min.css" rel="stylesheet">
     <link href="lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
 
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- Customized Bootstrap Stylesheet -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
@@ -190,81 +232,154 @@ try {
             <div class="navbar-nav ms-auto p-4 p-lg-0">
                 <a href="index.php" class="nav-item nav-link">Home</a>
                 <a href="tutorial.php" class="nav-item nav-link">Tutorial</a>
+                <a href="exercises.php" class="nav-item nav-link">Exercises</a>
                 <a href="about.php" class="nav-item nav-link">About Us</a>
                 <a href="progress.php" class="nav-item nav-link progress-btn">
                     <span class="user-initials me-2"><?php echo $userInitials; ?></span><span class="progress-text">Progress</span></a>     
+                <a href="logout.php" class="nav-item nav-link text-danger">Logout</a>
            </div>
         </div>
     </nav>
     <!-- Navbar End -->
 
-    <!-- Progress Card Start -->
-     <section class="progress-section">
+    <!-- Hero Section Start -->
+    <section class="hero-section">
+        <div class="container-fluid py-5">
+            <div class="row justify-content-center">
+                <div class="col-lg-10 col-md-12 text-center">
+                    <div class="hero-content">
+                        <h1 class="display-4 fw-bold text-white mb-4">Your Learning Journey</h1>
+                        <p class="lead text-white-50 mb-4">Track your progress and achievements across all quiz types</p>
+                        <div class="hero-stats d-flex justify-content-center gap-4 flex-wrap">
+                            <div class="stat-item">
+                                <div class="stat-number text-warning fw-bold fs-2"><?php echo $quizScores['basic_quiz']['total_attempts'] + $quizScores['time_rush']['total_attempts'] + $quizScores['math_quiz']['total_attempts']; ?></div>
+                                <div class="stat-label text-white-50">Total Attempts</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number text-success fw-bold fs-2">
+                                    <?php 
+                                    $totalQuizzes = 0;
+                                    if ($quizScores['basic_quiz']['best_score'] > 0) $totalQuizzes++;
+                                    if ($quizScores['time_rush']['best_score'] > 0) $totalQuizzes++;
+                                    if ($quizScores['math_quiz']['best_score'] > 0) $totalQuizzes++;
+                                    echo $totalQuizzes;
+                                    ?>
+                                </div>
+                                <div class="stat-label text-white-50">Quizzes Played</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Hero Section End -->
+
+    <!-- Quiz Performance Section Start -->
+    <section class="quiz-performance-section">
     <div class="container-fluid my-5">
         <div class="row justify-content-center">
             <div class="col-lg-10 col-md-12">
-                <div class="card shadow border-0 rounded-4 overflow-hidden">
-                    <div class="row g-0 flex-md-row flex-column">
-                        <div class="col-md-4 bg-light d-flex flex-column align-items-center justify-content-center p-4">
-                            <div class="profile-img mb-3">
-                                <i class="fa fa-user-circle fa-8x text-secondary" id="profileAvatar"></i>
-                            </div>
-                            <div class="profile-name fw-bold fs-4 text-center" id="profileName"></div>
-                            <div class="text-muted mt-2 mb-1 small"><i class="fa fa-envelope me-2"></i><span id="profileEmail"></span></div>
-                            <div class="mt-3">
-                                <a href="logout.php" class="btn btn-danger">
-                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
-                                </a>
+                    <h2 class="text-center mb-4 fw-bold text-dark">Quiz Performance</h2>
+                    <div class="row g-4">
+                        <!-- Basic Quiz Card -->
+                        <div class="col-lg-4 col-md-6">
+                            <div class="quiz-card shadow border-0 rounded-4 overflow-hidden h-100">
+                                <div class="quiz-card-header bg-gradient-primary text-white p-4 text-center">
+                                    <i class="fas fa-question-circle fa-3x mb-3"></i>
+                                    <h4 class="fw-bold mb-0">Basic Quiz</h4>
+                                </div>
+                                <div class="quiz-card-body p-4">
+                                    <div class="best-score-display text-center mb-3">
+                                        <div class="score-label text-muted small">Best Score</div>
+                                        <div class="score-value display-4 fw-bold" id="basicQuizScore">
+                                            <?php echo $quizScores['basic_quiz']['best_score'] > 0 ? number_format($quizScores['basic_quiz']['best_score'], 1) . '%' : '-'; ?>
+                                        </div>
+                                        <div class="badge-container mt-2" id="basicQuizBadge"></div>
+                                    </div>
+                                    <div class="quiz-stats">
+                                        <div class="stat-item d-flex justify-content-between mb-2">
+                                            <span class="text-muted"><i class="far fa-clock me-2"></i>Last Played:</span>
+                                            <span class="fw-bold" id="basicQuizLastPlayed">
+                                                <?php echo $quizScores['basic_quiz']['last_played'] ? date('M d, Y', strtotime($quizScores['basic_quiz']['last_played'])) : 'Never'; ?>
+                                            </span>
+                                        </div>
+                                        <div class="stat-item d-flex justify-content-between mb-3">
+                                            <span class="text-muted"><i class="fas fa-redo me-2"></i>Total Attempts:</span>
+                                            <span class="fw-bold"><?php echo $quizScores['basic_quiz']['total_attempts']; ?></span>
+                                        </div>
+                                    </div>
+                                    <a href="basic_quiz.php" class="btn btn-primary w-100 py-2">
+                                        <i class="fas fa-play me-2"></i>Play Now
+                                    </a>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-8 p-4 d-flex flex-column justify-content-center">
-                            <div class="fs-2 fw-bold mb-4 text-dark">Account Progress</div>
-                            <div class="row mb-4">
-                                <div class="col-md-4">
-                                    <div class="card h-100">
-                                        <div class="card-body">
-                                            <h5 class="card-title">Part 1 Progress</h5>
-                                            <div class="chart-container">
-                                                <canvas id="part1PieChart"></canvas>
-                                            </div>
-                                        </div>
-                                    </div>
+
+                        <!-- Time Rush Card -->
+                        <div class="col-lg-4 col-md-6">
+                            <div class="quiz-card shadow border-0 rounded-4 overflow-hidden h-100">
+                                <div class="quiz-card-header bg-gradient-rush text-white p-4 text-center">
+                                    <i class="fas fa-bolt fa-3x mb-3"></i>
+                                    <h4 class="fw-bold mb-0">Time Rush</h4>
                                 </div>
-                                <div class="col-md-4">
-                                    <div class="card h-100">
-                                        <div class="card-body">
-                                            <h5 class="card-title">Part 2 Progress</h5>
-                                            <div class="chart-container">
-                                                <canvas id="part2PieChart"></canvas>
-                                            </div>
+                                <div class="quiz-card-body p-4">
+                                    <div class="best-score-display text-center mb-3">
+                                        <div class="score-label text-muted small">Best Score</div>
+                                        <div class="score-value display-4 fw-bold" id="timeRushScore">
+                                            <?php echo $quizScores['time_rush']['best_score'] > 0 ? number_format($quizScores['time_rush']['best_score'], 0) . ' pts' : '-'; ?>
+                                        </div>
+                                        <div class="badge-container mt-2" id="timeRushBadge"></div>
+                                    </div>
+                                    <div class="quiz-stats">
+                                        <div class="stat-item d-flex justify-content-between mb-2">
+                                            <span class="text-muted"><i class="far fa-clock me-2"></i>Last Played:</span>
+                                            <span class="fw-bold" id="timeRushLastPlayed">
+                                                <?php echo $quizScores['time_rush']['last_played'] ? date('M d, Y', strtotime($quizScores['time_rush']['last_played'])) : 'Never'; ?>
+                                            </span>
+                                        </div>
+                                        <div class="stat-item d-flex justify-content-between mb-3">
+                                            <span class="text-muted"><i class="fas fa-redo me-2"></i>Total Attempts:</span>
+                                            <span class="fw-bold"><?php echo $quizScores['time_rush']['total_attempts']; ?></span>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="card h-100">
-                                        <div class="card-body">
-                                            <h5 class="card-title">Part 3 Progress</h5>
-                                            <div class="chart-container">
-                                                <canvas id="part3PieChart"></canvas>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <a href="time_rush_quiz.php" class="btn btn-warning w-100 py-2">
+                                        <i class="fas fa-play me-2"></i>Play Now
+                                    </a>
                                 </div>
                             </div>
-                            <div class="row">
-                                <div class="col-12">
-                                    <div class="chart-container">
-                                        <canvas id="progressLineChart"></canvas>
-                                    </div>
+                        </div>
+
+                        <!-- Math Quiz Card -->
+                        <div class="col-lg-4 col-md-6">
+                            <div class="quiz-card shadow border-0 rounded-4 overflow-hidden h-100">
+                                <div class="quiz-card-header bg-gradient-math text-white p-4 text-center">
+                                    <i class="fas fa-calculator fa-3x mb-3"></i>
+                                    <h4 class="fw-bold mb-0">Math Quiz</h4>
                                 </div>
-                            </div>
-                            <div class="border-top pt-3 mt-4 d-flex justify-content-between align-items-center flex-wrap mobile-progress-row">
-                                <span class="fw-bold text-dark">Total Completion</span>
-                                <button class="btn btn-primary me-2 d-flex align-items-center justify-content-center mobile-progress-btn" id="showHistoryBtn" style="gap: 0.5em;">
-                                    <i class="fas fa-history me-2"></i>
-                                    <span>Show History</span>
-                                    <span id="totalCompletion" class="badge bg-white text-info fw-bold ms-2" style="font-size:1.1em;"></span>
-                                </button>
+                                <div class="quiz-card-body p-4">
+                                    <div class="best-score-display text-center mb-3">
+                                        <div class="score-label text-muted small">Best Score</div>
+                                        <div class="score-value display-4 fw-bold" id="mathQuizScore">
+                                            <?php echo $quizScores['math_quiz']['best_score'] > 0 ? number_format($quizScores['math_quiz']['best_score'], 1) . '%' : '-'; ?>
+                                        </div>
+                                        <div class="badge-container mt-2" id="mathQuizBadge"></div>
+                                    </div>
+                                    <div class="quiz-stats">
+                                        <div class="stat-item d-flex justify-content-between mb-2">
+                                            <span class="text-muted"><i class="far fa-clock me-2"></i>Last Played:</span>
+                                            <span class="fw-bold" id="mathQuizLastPlayed">
+                                                <?php echo $quizScores['math_quiz']['last_played'] ? date('M d, Y', strtotime($quizScores['math_quiz']['last_played'])) : 'Never'; ?>
+                                            </span>
+                                        </div>
+                                        <div class="stat-item d-flex justify-content-between mb-3">
+                                            <span class="text-muted"><i class="fas fa-redo me-2"></i>Total Attempts:</span>
+                                            <span class="fw-bold"><?php echo $quizScores['math_quiz']['total_attempts']; ?></span>
+                                        </div>
+                                    </div>
+                                    <a href="math_quiz.php" class="btn btn-success w-100 py-2">
+                                        <i class="fas fa-play me-2"></i>Play Now
+                                    </a>
                             </div>
                         </div>
                     </div>
@@ -273,281 +388,69 @@ try {
         </div>
     </div>
     </section>
-    <!-- Progress Card End -->
+    <!-- Quiz Performance Section End -->
 
     <script>
-    const userData = <?php echo json_encode([
-        'name' => $userInfo['name'],
-        'email' => $userInfo['email'],
-        'memberSince' => $userInfo['memberSince'],
-        'completedExercises' => $completedExercises,
-        'monthlyProgress' => $monthlyProgress
-    ]); ?>;
-
-    const quizHistory = <?php echo json_encode($quizHistory); ?>;
-
-    // Function to calculate progress based on completed exercises
-    function calculateProgress(completedExercises) {
-        const totalExercises = 7; // Total number of exercises per part
-        return Math.round((completedExercises / totalExercises) * 100);
-    }
-
-    // Calculate progress for each part
-    const part1Progress = Object.values(userData.completedExercises.part1).filter(Boolean).length;
-    const part2Progress = Object.values(userData.completedExercises.part2).filter(Boolean).length;
-    const part3Progress = Object.values(userData.completedExercises.part3).filter(Boolean).length;
-
-    const part1Percentage = calculateProgress(part1Progress);
-    const part2Percentage = calculateProgress(part2Progress);
-    const part3Percentage = calculateProgress(part3Progress);
-
-    // Populate profile
-    document.getElementById("profileName").textContent = userData.name;
-    document.getElementById("profileEmail").textContent = userData.email;
-
-    // Calculate total completion
-    const totalAvg = Math.round((part1Percentage + part2Percentage + part3Percentage) / 3);
-    document.getElementById("totalCompletion").textContent = totalAvg + "%";
-
-    // Create Part 1 Pie Chart
-    const part1Ctx = document.getElementById('part1PieChart').getContext('2d');
-    new Chart(part1Ctx, {
-        type: 'pie',
-        data: {
-            labels: ['Numbers', 'Alphabet', 'Greetings', 'Common Verbs', 'Nouns', 'Adjectives', 'Questions'],
-            datasets: [{
-                data: [100  /7, 100/7, 100/7, 100/7, 100/7, 100/7, 100/7],
-                backgroundColor: Object.values(userData.completedExercises.part1).map((completed, index) => 
-                    completed ? [
-                        '#06BBCC',
-                        '#00c6fb',
-                        '#0dcaf0',
-                        '#0d6efd',
-                        '#0a58ca',
-                        '#084298',
-                        '#052c65'
-                    ][index] : '#e9ecef'
-                ),
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'right',
-                    labels: {
-                        font: {
-                            size: 12
-                        }
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const isCompleted = Object.values(userData.completedExercises.part1)[context.dataIndex];
-                            return `${context.label}: ${isCompleted ? 'Completed' : 'Not Started'}`;
-                        }
-                    }
-                }
-            }
-        }
-    });
-
-    // Create Part 2 Pie Chart
-    const part2Ctx = document.getElementById('part2PieChart').getContext('2d');
-    new Chart(part2Ctx, {
-        type: 'pie',
-        data: {
-            labels: ['Numbers', 'Alphabet', 'Greetings', 'Common Verbs', 'Nouns', 'Adjectives', 'Questions'],
-            datasets: [{
-                data: [100/7, 100/7, 100/7, 100/7, 100/7, 100/7, 100/7],
-                backgroundColor: Object.values(userData.completedExercises.part2).map((completed, index) => 
-                    completed ? [
-                        '#06BBCC',
-                        '#00c6fb',
-                        '#0dcaf0',
-                        '#0d6efd',
-                        '#0a58ca',
-                        '#084298',
-                        '#052c65'
-                    ][index] : '#e9ecef'
-                ),
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'right',
-                    labels: {
-                        font: {
-                            size: 12
-                        }
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const isCompleted = Object.values(userData.completedExercises.part2)[context.dataIndex];
-                            return `${context.label}: ${isCompleted ? 'Completed' : 'Not Started'}`;
-                        }
-                    }
-                }
-            }
-        }
-    });
-
-    // Create Part 3 Pie Chart
-    const part3Ctx = document.getElementById('part3PieChart').getContext('2d');
-    new Chart(part3Ctx, {
-        type: 'pie',
-        data: {
-            labels: ['Numbers', 'Alphabet', 'Greetings', 'Common Verbs', 'Nouns', 'Adjectives', 'Questions'],
-            datasets: [{
-                data: [100/7, 100/7, 100/7, 100/7, 100/7, 100/7, 100/7],
-                backgroundColor: Object.values(userData.completedExercises.part3).map((completed, index) => 
-                    completed ? [
-                        '#06BBCC',
-                        '#00c6fb',
-                        '#0dcaf0',
-                        '#0d6efd',
-                        '#0a58ca',
-                        '#084298',
-                        '#052c65'
-                    ][index] : '#e9ecef'
-                ),
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'right',
-                    labels: {
-                        font: {
-                            size: 12
-                        }
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const isCompleted = Object.values(userData.completedExercises.part3)[context.dataIndex];
-                            return `${context.label}: ${isCompleted ? 'Completed' : 'Not Started'}`;
-                        }
-                    }
-                }
-            }
-        }
-    });
-
-    // Add percentage labels to the charts
-    function addPercentageLabel(canvasId, percentage) {
-        const canvas = document.getElementById(canvasId);
-        const ctx = canvas.getContext('2d');
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
+    const quizScores = <?php echo json_encode($quizScores); ?>;
+    
+    // Function to get badge HTML based on score
+    function getBadge(score, quizType) {
+        let badgeClass, badgeText, badgeIcon;
         
-        ctx.font = 'bold 24px Arial';
-        ctx.fillStyle = '#06BBCC';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(percentage + '%', centerX, centerY);
-    }
-
-    // Add percentage labels after charts are rendered
-    setTimeout(() => {
-        addPercentageLabel('part1PieChart', part1Percentage);
-        addPercentageLabel('part2PieChart', part2Percentage);
-        addPercentageLabel('part3PieChart', part3Percentage);
-    }, 100);
-
-    // Create Line Chart
-    const lineCtx = document.getElementById('progressLineChart').getContext('2d');
-    new Chart(lineCtx, {
-        type: 'line',
-        data: {
-            labels: userData.monthlyProgress.map(item => item.month),
-            datasets: [{
-                label: 'Monthly Progress',
-                data: userData.monthlyProgress.map(item => item.completion),
-                borderColor: '#06BBCC',
-                backgroundColor: 'rgba(6, 187, 204, 0.1)',
-                tension: 0.4,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Progress Over Time'
-                },
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100,
-                    title: {
-                        display: true,
-                        text: 'Completion (%)'
-                    }
-                }
+        if (quizType === 'time_rush') {
+            // Time Rush uses points
+            if (score >= 20) {
+                badgeClass = 'badge-gold';
+                badgeText = 'Gold';
+                badgeIcon = '🥇';
+            } else if (score >= 10) {
+                badgeClass = 'badge-silver';
+                badgeText = 'Silver';
+                badgeIcon = '🥈';
+            } else if (score > 0) {
+                badgeClass = 'badge-bronze';
+                badgeText = 'Bronze';
+                badgeIcon = '🥉';
+            } else {
+                return '';
+            }
+        } else {
+            // Percentage-based (Basic Quiz & Math Quiz)
+            if (score >= 85) {
+                badgeClass = 'badge-gold';
+                badgeText = 'Gold';
+                badgeIcon = '🥇';
+            } else if (score >= 70) {
+                badgeClass = 'badge-silver';
+                badgeText = 'Silver';
+                badgeIcon = '🥈';
+            } else if (score > 0) {
+                badgeClass = 'badge-bronze';
+                badgeText = 'Bronze';
+                badgeIcon = '🥉';
+            } else {
+                return '';
             }
         }
-    });
+        
+        return `<span class="achievement-badge ${badgeClass}">${badgeIcon} ${badgeText}</span>`;
+    }
+    
+    // Display badges for each quiz
+    if (quizScores.basic_quiz.best_score > 0) {
+        document.getElementById('basicQuizBadge').innerHTML = getBadge(quizScores.basic_quiz.best_score, 'basic_quiz');
+    }
+    
+    if (quizScores.time_rush.best_score > 0) {
+        document.getElementById('timeRushBadge').innerHTML = getBadge(quizScores.time_rush.best_score, 'time_rush');
+    }
+    
+    if (quizScores.math_quiz.best_score > 0) {
+        document.getElementById('mathQuizBadge').innerHTML = getBadge(quizScores.math_quiz.best_score, 'math_quiz');
+    }
 
-    // History Button Click Handler
-    document.getElementById('showHistoryBtn').addEventListener('click', function() {
-        let rows = quizHistory.map(item => `
-            <tr>
-                <td>${item.date}</td>
-                <td>${item.exercise}</td>
-                <td>${item.score}</td>
-            </tr>
-        `).join('');
-        const modalContent = `
-            <div class="modal fade" id="historyModal" tabindex="-1">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Learning History</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="table-responsive">
-                                <table class="table table-bordered">
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Exercise</th>
-                                            <th>Score</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${rows}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        document.body.insertAdjacentHTML('beforeend', modalContent);
-        const modal = new bootstrap.Modal(document.getElementById('historyModal'));
-        modal.show();
-    });
+
+
     </script>
 
    
@@ -653,27 +556,257 @@ try {
     <script src="js/main.js"></script>
 
     <style>
+    /* Hero Section */
+    .hero-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .hero-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.05)"/><circle cx="10" cy="60" r="0.5" fill="rgba(255,255,255,0.05)"/><circle cx="90" cy="40" r="0.5" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+        opacity: 0.3;
+    }
+    
+    .hero-content {
+        position: relative;
+        z-index: 2;
+    }
+    
+    .hero-stats {
+        margin-top: 2rem;
+    }
+    
+    .stat-item {
+        text-align: center;
+        padding: 1rem;
+    }
+    
+    .stat-number {
+        display: block;
+        font-size: 2.5rem;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 600;
+    }
+    
+    /* Quiz Performance Cards */
+    .quiz-performance-section {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 3rem 0;
+    }
+    
+    .quiz-card {
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        background: white;
+        border: 1px solid rgba(0,0,0,0.05);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .quiz-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+        transition: left 0.5s;
+    }
+    
+    .quiz-card:hover::before {
+        left: 100%;
+    }
+    
+    .quiz-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1), 0 5px 15px rgba(0,0,0,0.08) !important;
+    }
+    
+    .quiz-card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    }
+    
+    .bg-gradient-rush {
+        background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%) !important;
+    }
+    
+    .bg-gradient-math {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+    }
+    
+    .quiz-card-header i {
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    }
+    
+    .quiz-card-body {
+        background: white;
+    }
+    
+    .best-score-display {
+        padding: 1rem 0;
+    }
+    
+    .score-label {
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 600;
+    }
+    
+    .score-value {
+        color: #06BBCC;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .badge-container {
+        min-height: 30px;
+    }
+    
+    .achievement-badge {
+        display: inline-block;
+        padding: 0.5rem 1.5rem;
+        border-radius: 25px;
+        font-weight: bold;
+        font-size: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        animation: badgePop 0.5s ease;
+    }
+    
+    @keyframes badgePop {
+        0% { transform: scale(0); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+    
+    .badge-gold {
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        color: #fff;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    }
+    
+    .badge-silver {
+        background: linear-gradient(135deg, #C0C0C0, #A8A8A8);
+        color: #fff;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    }
+    
+    .badge-bronze {
+        background: linear-gradient(135deg, #CD7F32, #B8732D);
+        color: #fff;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    }
+    
+    .quiz-stats {
+        border-top: 1px solid #e9ecef;
+        padding-top: 1rem;
+    }
+    
+    .stat-item {
+        font-size: 0.9rem;
+    }
+    
+    .stat-item i {
+        color: #06BBCC;
+    }
+    
+    /* Enhanced Button Styling */
+    .quiz-card .btn {
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .quiz-card .btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
+    }
+    
+    .quiz-card .btn:hover::before {
+        left: 100%;
+    }
+    
+    .quiz-card .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    
+    /* Section Title Enhancement */
+    .quiz-performance-section h2 {
+        position: relative;
+        margin-bottom: 3rem;
+    }
+    
+    .quiz-performance-section h2::after {
+        content: '';
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 4px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 2px;
+    }
+    
     @media (max-width: 768px) {
-        .mobile-progress-row {
-            flex-direction: column !important;
-            align-items: stretch !important;
-            gap: 0.5em;
-            text-align: center;
+        .hero-section {
+            padding: 2rem 0;
         }
-        .mobile-progress-btn {
-            width: 100%;
-            justify-content: center !important;
-            font-size: 1.1em;
-            padding: 0.7em 0.5em;
+        
+        .hero-section h1 {
+            font-size: 2.5rem;
         }
-        #totalCompletion {
-            background: #fff;
-            color: #06BBCC !important;
-            border-radius: 1em;
-            margin-left: 0.5em;
-            font-weight: bold;
-            font-size: 1.1em;
-            box-shadow: 0 1px 4px rgba(6,187,204,0.08);
+        
+        .hero-stats {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+        }
+        
+        .quiz-performance-section h2 {
+            font-size: 1.8rem;
+        }
+        
+        .score-value {
+            font-size: 2.5rem !important;
+        }
+        
+        .achievement-badge {
+            font-size: 0.85rem;
+            padding: 0.4rem 1rem;
+        }
+        
+        .quiz-card:hover {
+            transform: translateY(-4px) scale(1.01);
         }
     }
     </style>

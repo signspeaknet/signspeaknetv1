@@ -19,12 +19,14 @@ for ($i = 29; $i >= 0; $i--) {
 }
 
 try {
-    // Query distinct active users per minute from attempts
+    // Query distinct active (non-admin) users per minute from presence heartbeats
     $sql = "
-        SELECT DATE_FORMAT(started_at, '%Y-%m-%d %H:%i') AS minute_bucket,
-               COUNT(DISTINCT user_id) AS users
-        FROM advanced_quiz_attempts
-        WHERE started_at >= DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+        SELECT DATE_FORMAT(upm.bucket_minute, '%Y-%m-%d %H:%i') AS minute_bucket,
+               COUNT(DISTINCT upm.user_id) AS users
+        FROM user_presence_minutely upm
+        LEFT JOIN admin_users a ON a.admin_id = upm.user_id
+        WHERE upm.bucket_minute >= DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+          AND a.admin_id IS NULL
         GROUP BY minute_bucket
         ORDER BY minute_bucket
     ";

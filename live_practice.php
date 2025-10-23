@@ -1,5 +1,12 @@
 <?php
 session_start();
+
+// Check if user is logged in, redirect to login if not
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit();
+}
+
 include 'user_helper.php';
 
 // Get user info if logged in
@@ -132,6 +139,7 @@ if (isset($_SESSION['user_id'])) {
             height: 100%;
             object-fit: cover;
             display: none;
+            transform: scaleX(-1); /* Mirror visuals only */
         }
 
         .controls-container {
@@ -279,7 +287,8 @@ if (isset($_SESSION['user_id'])) {
         .gesture-square {
             position: absolute;
             top: 20px;
-            left: 20px;
+            right: 20px;
+            left: auto;
             width: 80px;
             height: 80px;
             background-color: rgba(40, 167, 69, 0.3);
@@ -422,6 +431,7 @@ if (isset($_SESSION['user_id'])) {
             <div class="navbar-nav ms-auto p-4 p-lg-0">
                 <a href="index.php" class="nav-item nav-link">Home</a>
                 <a href="tutorial.php" class="nav-item nav-link">Tutorial</a>
+                <a href="#" class="nav-item nav-link">Exercises</a>
                 <a href="about.php" class="nav-item nav-link">About Us</a>
                 <a href="progress.php" class="nav-item nav-link progress-btn">
                     <?php if (isset($_SESSION['user_id'])): ?>
@@ -816,8 +826,11 @@ if (isset($_SESSION['user_id'])) {
                 const middleTip = handLandmarks[12];
                 if (!indexTip || !middleTip) return false;
                 const square = getSquareBounds();
-                const indexIn = indexTip.x >= square.left && indexTip.x <= square.right && indexTip.y >= square.top && indexTip.y <= square.bottom;
-                const middleIn = middleTip.x >= square.left && middleTip.x <= square.right && middleTip.y >= square.top && middleTip.y <= square.bottom;
+                // Mirror X for hit-testing to match mirrored visuals
+                const indexX = 1 - indexTip.x;
+                const middleX = 1 - middleTip.x;
+                const indexIn = indexX >= square.left && indexX <= square.right && indexTip.y >= square.top && indexTip.y <= square.bottom;
+                const middleIn = middleX >= square.left && middleX <= square.right && middleTip.y >= square.top && middleTip.y <= square.bottom;
                 return indexIn && middleIn;
             }
 
@@ -1007,13 +1020,29 @@ if (isset($_SESSION['user_id'])) {
 
             function normalizeWordKey(k) {
                 // selectedWords entries match keys used in selection (e.g., "A", "2", "Hello", "Thank you")
-                return String(k).trim().toLowerCase();
+                let normalized = String(k).trim().toLowerCase();
+                
+                // Handle 0/O equivalence - both should be treated as "0"
+                if (normalized === 'o') {
+                    normalized = '0';
+                }
+                
+                return normalized;
             }
 
             function checkPrediction(predicted) {
                 const currentKey = selectedWords[currentIndex] || '';
                 if (!predicted) return;
-                if (normalizeWordKey(predicted) === normalizeWordKey(currentKey)) {
+                
+                // Normalize both predicted and current key for comparison
+                const normalizedPredicted = normalizeWordKey(predicted);
+                const normalizedCurrent = normalizeWordKey(currentKey);
+                
+                // Check for exact match or 0/O equivalence
+                const isMatch = normalizedPredicted === normalizedCurrent || 
+                               (normalizedPredicted === '0' && normalizedCurrent === '0');
+                
+                if (isMatch) {
                     // Show congratulations overlay briefly
                     congratsOverlay.style.display = 'flex';
                     setTimeout(() => { congratsOverlay.style.display = 'none'; }, 1600);

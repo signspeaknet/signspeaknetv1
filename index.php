@@ -82,6 +82,7 @@ if (isset($_SESSION['user_id'])) {
             <div class="navbar-nav ms-auto p-4 p-lg-0">
                 <a href="index.php" class="nav-item nav-link">Home</a>
                 <a href="tutorial.php" class="nav-item nav-link">Tutorial</a>
+                <a href="exercises.php" class="nav-item nav-link">Exercises</a>
                 <a href="about.php" class="nav-item nav-link">About Us</a>
                 <a href="progress.php" class="nav-item nav-link progress-btn">
                     <?php if (isset($_SESSION['user_id'])): ?>
@@ -154,7 +155,9 @@ if (isset($_SESSION['user_id'])) {
                 <div class="col-lg-3 col-sm-6 wow fadeInUp" data-wow-delay="0.5s">
                     <div class="service-item text-center pt-3">
                         <div class="p-4">
-                            <i class="fa fa-3x fa-home text-primary mb-4"></i>
+                            <i class="fa fa-3x fa-dumbbell text-primary mb-4"></i>
+                            <h5 class="mb-3">Interactive Exercises</h5>
+                            <p>SignSpeak provides engaging interactive exercises and quizzes to test and improve your sign language skills. Practice with timed challenges, math problems, and basic vocabulary exercises that adapt to your learning pace and help reinforce your knowledge through hands-on practice.</p>
                         </div>
                     </div>
                 </div>
@@ -189,7 +192,7 @@ if (isset($_SESSION['user_id'])) {
                     <h1 class="mb-4">Welcome to SignSpeak</h1>
                     <p class="mb-4">We are a group of students from Davao del Norte State College who developed SignSpeak with the goal of promoting inclusive communication. We saw the need to bridge the gap between people who are deaf or mute and those who can hear and speak. With this project, we aim to create a more understanding and connected community.</p>
                     <p class="mb-4">SignSpeak serves as a learning platform where deaf and mute individuals can study basic sign language through videos, tutorials, and interactive tools. By making sign language more accessible, we hope to empower users with the confidence to communicate and engage with others in school, at home, and in public settings.</p>   
-                    <a class="btn btn-primary py-3 px-5 mt-2" href="about.html">Read More</a>
+                    <a class="btn btn-primary py-3 px-5 mt-2" href="about.php">Read More</a>
                 </div>
             </div>
         </div>

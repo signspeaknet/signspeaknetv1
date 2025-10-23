@@ -6,7 +6,7 @@ session_start();
 $client = new Google_Client();
 $client->setClientId('915334786087-nbgf844k1895gi0e08qt915rolms1pq5.apps.googleusercontent.com');
 $client->setClientSecret('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');
-$client->setRedirectUri('http://localhost/signspeaknetv1/google_login.php');
+$client->setRedirectUri('https://signspeak.net/google_login.php');
 $client->addScope('email');
 $client->addScope('profile');
 

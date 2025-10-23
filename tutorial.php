@@ -77,6 +77,7 @@ if (isset($_SESSION['user_id'])) {
             <div class="navbar-nav ms-auto p-4 p-lg-0">
                 <a href="index.php" class="nav-item nav-link">Home</a>
                 <a href="tutorial.php" class="nav-item nav-link">Tutorial</a>
+                <a href="exercises.php" class="nav-item nav-link">Exercises</a>
                 <a href="about.php" class="nav-item nav-link">About Us</a>
                 <a href="progress.php" class="nav-item nav-link progress-btn">
                     <?php if (isset($_SESSION['user_id'])): ?>
@@ -218,7 +219,7 @@ if (isset($_SESSION['user_id'])) {
                     </div>
                     <!-- Image Display -->
                     <div class="image-container">
-                        <img id="gifDisplay" src="img/tutorialgif/hello1.gif" alt="Selected Sign">
+                        <img id="gifDisplay" src="img/tutorialgif/greetings/hello.gif" alt="Selected Sign" onerror="this.onerror=null;this.src='img/hello1.gif';">
                     </div>
                 </div>
                 <!-- Navigation Buttons -->

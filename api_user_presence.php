@@ -17,8 +17,11 @@ $python_server_url = 'https://active-user-server.onrender.com';
 
 switch ($action) {
     case 'update_presence':
-        if (isset($_SESSION['user_id'])) {
-            $user_id = $_SESSION['user_id'];
+        if (isset($_SESSION['user_id']) || isset($_POST['user_id'])) {
+            // Prefer explicit user_id param when provided; fallback to session
+            $user_id = isset($_POST['user_id']) && ctype_digit((string)$_POST['user_id'])
+                ? (int)$_POST['user_id']
+                : (int)$_SESSION['user_id'];
             
             // Get user info
             $stmt = $conn->prepare("SELECT username, auth_provider FROM users WHERE user_id = ?");
@@ -49,11 +52,34 @@ switch ($action) {
             $response = curl_exec($ch);
             $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
-            
-            if ($http_code === 200) {
+
+            // Always upsert into local DB so trends populate even when Python server DB isn't reachable
+            try {
+                $session_json = json_encode([
+                    'page' => $_POST['page'] ?? $_SERVER['REQUEST_URI'],
+                    'action' => $_POST['user_action'] ?? 'browsing',
+                    'timestamp' => date('c')
+                ]);
+
+                $stmtUp = $conn->prepare("INSERT INTO user_sessions (user_id, last_activity, session_data, ip_address, user_agent) VALUES (?, NOW(), ?, ?, ?) ON DUPLICATE KEY UPDATE last_activity = NOW(), session_data = VALUES(session_data), ip_address = VALUES(ip_address), user_agent = VALUES(user_agent)");
+                $ip = $_SERVER['REMOTE_ADDR'] ?? null;
+                $ua = $_SERVER['HTTP_USER_AGENT'] ?? null;
+                $stmtUp->bind_param('isss', $user_id, $session_json, $ip, $ua);
+                $stmtUp->execute();
+                $stmtUp->close();
+            } catch (Exception $e) {
+                // ignore DB error here; presence still works via websocket
+            }
+
+            if ($http_code === 200 && $response) {
                 echo $response;
             } else {
-                echo json_encode(['success' => false, 'error' => 'Server communication failed']);
+                // Still return success so the client can emit socket events directly
+                echo json_encode([
+                    'success' => true,
+                    'user_id' => $user_id,
+                    'user_info' => $user ?? null
+                ]);
             }
         } else {
             echo json_encode(['success' => false, 'error' => 'Not logged in']);

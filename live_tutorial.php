@@ -263,6 +263,7 @@ if (isset($_SESSION['user_id'])) {
             <div class="navbar-nav ms-auto p-4 p-lg-0">
                 <a href="index.php" class="nav-item nav-link">Home</a>
                 <a href="tutorial.php" class="nav-item nav-link">Tutorial</a>
+                <a href="exercises.php" class="nav-item nav-link">Exercises</a>
                 <a href="about.php" class="nav-item nav-link">About Us</a>
                 <a href="progress.php" class="nav-item nav-link progress-btn">
                     <?php if (isset($_SESSION['user_id'])): ?>
@@ -551,12 +552,12 @@ if (isset($_SESSION['user_id'])) {
 
     <!-- User Presence Tracking -->
     <?php if (isset($_SESSION['user_id'])): ?>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script src="js/user-presence.js"></script>
     <script>
         // Set the current user ID for the presence manager
         window.currentUserId = <?php echo $_SESSION['user_id']; ?>;
     </script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="js/user-presence.js"></script>
     <?php endif; ?>
 </body>
 </html>

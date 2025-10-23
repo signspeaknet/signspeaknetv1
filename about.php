@@ -82,6 +82,7 @@ if (isset($_SESSION['user_id'])) {
             <div class="navbar-nav ms-auto p-4 p-lg-0">
                 <a href="index.php" class="nav-item nav-link">Home</a>
                 <a href="tutorial.php" class="nav-item nav-link">Tutorial</a>
+                <a href="exercises.php" class="nav-item nav-link">Exercises</a>
                 <a href="about.php" class="nav-item nav-link active">About Us</a>
                 <a href="progress.php" class="nav-item nav-link progress-btn">
                     <?php if (isset($_SESSION['user_id'])): ?>
@@ -135,9 +136,9 @@ if (isset($_SESSION['user_id'])) {
                 <div class="col-lg-3 col-sm-6 wow fadeInUp" data-wow-delay="0.5s">
                     <div class="service-item text-center pt-3">
                         <div class="p-4">
-                            <i class="fa fa-3x fa-home text-primary mb-4"></i>
-                            <h5 class="mb-3">Exercise</h5>
-                            <p>SignSpeak offers interactive exercises that help users practice and improve their sign language skills. With engaging challenges and real-time feedback, it encourages daily learning, boosts confidence, and supports better communication through consistent practice.</p>
+                            <i class="fa fa-3x fa-dumbbell text-primary mb-4"></i>
+                            <h5 class="mb-3">Interactive Exercises</h5>
+                            <p>SignSpeak provides engaging interactive exercises and quizzes to test and improve your sign language skills. Practice with timed challenges, math problems, and basic vocabulary exercises that adapt to your learning pace and help reinforce your knowledge through hands-on practice.</p>
                         </div>
                     </div>
                 </div>

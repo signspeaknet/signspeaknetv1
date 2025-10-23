@@ -188,6 +188,35 @@ To add new charts or metrics:
 - Check table permissions
 - Verify database connection settings
 
+### Active Users Logging and Rollup (Windows)
+
+Two maintenance scripts were added:
+
+1) Minutely logger: `cron_log_active_users.php`
+- Snapshots active user IDs into `user_presence_minutely` (also available via `per_minute_active_users` view).
+- Command:
+```
+C:\xampp\php\php.exe -f C:\xampp\htdocs\signspeaknetv1\cron_log_active_users.php
+```
+
+2) Daily rollup: `cron_rollup_active_users.php`
+- Aggregates minute records older than 7 days into `daily_active_users` (stores max users per day) and purges those minute rows.
+- Command:
+```
+C:\xampp\php\php.exe -f C:\xampp\htdocs\signspeaknetv1\cron_rollup_active_users.php
+```
+
+Schedule with Windows Task Scheduler:
+- Create Task → Triggers: On a schedule
+- Minutely job: Repeat task every 1 minute indefinitely, action points to the minutely command above
+- Daily rollup: Daily at 00:10, action points to the rollup command above
+- Set "Start in" to `C:\xampp\htdocs\signspeaknetv1`
+
+Notes:
+- Ensure MySQL and Apache are running in XAMPP.
+- The minutely logger is idempotent and safe to run multiple times per minute.
+- Admin users are excluded from counts.
+
 ### Performance Optimization
 - Add database indexes for frequently queried columns
 - Implement caching for heavy queries

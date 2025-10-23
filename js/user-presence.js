@@ -6,7 +6,7 @@ class UserPresenceManager {
         this.socket = null;
         this.isConnected = false;
         this.activeUsers = [];
-        // Replace with your actual Render URL after deployment
+        // Render URL of the Python presence server
         this.pythonServerUrl = 'https://active-user-server.onrender.com';
         this.init();
     }
@@ -14,7 +14,7 @@ class UserPresenceManager {
     init() {
         this.connectToServer();
         this.trackActivity();
-        setInterval(() => this.updatePresence(), 30000); // Update every 30 seconds
+        setInterval(() => this.updatePresence(), 3000); // Update every 3 seconds
     }
     
     connectToServer() {
@@ -43,8 +43,6 @@ class UserPresenceManager {
     }
     
     async updatePresence() {
-        if (!this.isConnected) return;
-        
         try {
             const response = await fetch('api_user_presence.php', {
                 method: 'POST',
@@ -53,6 +51,7 @@ class UserPresenceManager {
                 },
                 body: new URLSearchParams({
                     action: 'update_presence',
+                    user_id: this.getCurrentUserId() || '',
                     page: window.location.pathname,
                     user_action: this.getCurrentAction()
                 })
@@ -61,8 +60,11 @@ class UserPresenceManager {
             const data = await response.json();
             if (data.success && this.socket) {
                 this.socket.emit('user_login', {
-                    userId: data.user_id,
-                    userInfo: data.user_info
+                    user_id: data.user_id,
+                    user_info: data.user_info || {}
+                });
+                this.socket.emit('user_activity', {
+                    user_id: this.getCurrentUserId()
                 });
             }
         } catch (error) {
@@ -76,7 +78,7 @@ class UserPresenceManager {
             document.addEventListener(event, () => {
                 if (this.socket && this.isConnected) {
                     this.socket.emit('user_activity', {
-                        userId: this.getCurrentUserId()
+                        user_id: this.getCurrentUserId()
                     });
                 }
             }, { passive: true });
